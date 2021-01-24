@@ -1,0 +1,204 @@
+swagger: '2.0'
+info:
+  title: Child Care API
+  version: '0.1'
+  description: API to store and retrieve children
+basePath: '/v1'
+paths:
+  /children:
+    get:
+      tags: [Children]
+      operationId: children.get_children
+      summary: Get all children
+      parameters:
+        - name: recent
+          in: query
+          type: boolean
+          default: true
+        - name: limit
+          in: query
+          type: integer
+          format: int32
+          minimum: 0
+          default: 5
+      responses:
+        200:
+          description: Return children
+          schema:
+            type: object
+            properties:
+              children:
+                type: array
+                items:
+                  $ref: '#/definitions/Child'
+
+    post:
+      tags: [Children]
+      operationId: children.post_children
+      summary: Create a child
+      parameters:
+        - name: child
+          in: body
+          schema:
+            $ref: '#/definitions/Child'
+      responses:
+        201:
+          description: New child created
+
+  /children/{child_id}:
+    get:
+      tags: [Children]
+      operationId: children.get_child
+      summary: Get a child
+      parameters:
+        - $ref: '#/parameters/child_id'
+      responses:
+        200:
+          description: Return child
+          schema:
+            $ref: '#/definitions/Child'
+        404:
+          description: Child does not exist
+
+    put:
+      tags: [Children]
+      operationId: children.put_child
+      summary: Edit a child
+      parameters:
+        - $ref: '#/parameters/child_id'
+        - name: changed_attributes
+          in: body
+          schema:
+            type: object
+      responses:
+        200:
+          description: Child updated
+        404:
+          description: Child does not exist
+
+  /parents/{child_id}:
+    get:
+      tags: [Parents]
+      operationId: parents.get_parents
+      summary: Get parents of a child
+      parameters:
+        - $ref: '#/parameters/child_id'
+      responses:
+        200:
+          description: Return parents
+          schema:
+            type: object
+            properties:
+              parents:
+                type: array
+                items:
+                  $ref: '#/definitions/Parent'
+        404:
+          description: Child does not exist
+
+
+parameters:
+  child_id:
+    name: child_id
+    description: Child's unique identifier
+    in: path
+    type: integer
+    required: true
+
+  parent_id:
+    name: parent_id
+    description: Parent's unique identifier
+    in: path
+    type: integer
+    required: true
+
+
+definitions:
+  Child:
+    type: object
+    required:
+      - name
+      - birthday
+    properties:
+      id:
+        type: integer
+        description: Unique identifier
+        example: 123
+        readOnly: true
+      name:
+        type: string
+        description: Child's name
+        example: "Susie"
+        minLength: 1
+        maxLength: 25
+      surname:
+        type: string
+        description: Child's surname
+        example: "Meier"
+        minLength: 1
+        maxLength: 25
+      birthday:
+        type: string
+        format: date
+        description: Birth date
+        example: "2020-01-01"
+      parents:
+        type: array
+        description: IDs of parents
+        items:
+          type: integer
+      start_date:
+        type: string
+        format: date
+        description: Begin of child care
+        example: "2020-01-01"
+      end_date:
+        type: array
+        format: date
+        description: End of child care
+        example: "2020-01-01"
+      created:
+        type: string
+        format: date-time
+        description: Creation time
+        example: "2020-01-01T01:05:00.230+02:00"
+        readOnly: true
+
+
+  Parent:
+    type: object
+    required:
+      - name
+      - telefone
+    properties:
+      id:
+        type: integer
+        description: Unique identifier
+        example: 123
+        readOnly: true
+      children:
+        type: array
+        description: IDs of children
+        items:
+         type: integer
+      name:
+        type: string
+        description: Complete parent name
+        example: "Gitta Gans"
+        minLength: 1
+        maxLength: 25
+      telefone:
+        type: string
+        description: Parent's telefone number
+        example: "+49 089 999999"
+        pattern: "^+[0-9]*$"
+      email:
+        type: string
+        description: Parent's email address
+        example: "test@example.com"
+      created:
+        type: string
+        format: date-time
+        description: Creation time
+        example: "2020-01-01T01:05:00.230+02:00"
+        readOnly: true
