@@ -3,7 +3,7 @@ info:
   title: Child Care API
   version: '0.1'
   description: API to store and retrieve children
-basePath: '/v1'
+basePath: '/rest/connexion/v1'
 paths:
   /children:
     get:
