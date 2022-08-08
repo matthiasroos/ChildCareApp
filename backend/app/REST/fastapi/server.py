@@ -6,8 +6,12 @@ import database.queries
 
 app = fastapi.FastAPI()
 
+subapi = fastapi.FastAPI()
 
-@app.get('/rest/fastapi/v1/children')
+PATH = '/rest/fastapi/v1'
+
+
+@subapi.get('/children')
 async def fetch_children(recent: bool = False, limit: int = 10):
     """
 
@@ -17,7 +21,7 @@ async def fetch_children(recent: bool = False, limit: int = 10):
     return result
 
 
-@app.get('/rest/fastapi/v1/children/{child_id}')
+@subapi.get('/children/{child_id}')
 async def fetch_child(child_id: int = fastapi.Path(..., title='ID of the child to get')):
     """
 
@@ -26,7 +30,7 @@ async def fetch_child(child_id: int = fastapi.Path(..., title='ID of the child t
     return None
 
 
-@app.post('/rest/fastapi/v1/children', status_code=fastapi.status.HTTP_201_CREATED)
+@subapi.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
 async def create_child(child: dict):
     """
 
@@ -36,7 +40,7 @@ async def create_child(child: dict):
     return None
 
 
-@app.delete('/rest/fastapi/v1/children')
+@subapi.delete('/children')
 async def delete_child(child_id: int):
     """
 
@@ -46,7 +50,7 @@ async def delete_child(child_id: int):
     return None
 
 
-@app.post('/rest/fastapi/v1/children/{child_id}/caretimes')
+@subapi.post('/children/{child_id}/caretimes')
 async def add_caretime(child_id: int, ):
     """
 
@@ -54,6 +58,27 @@ async def add_caretime(child_id: int, ):
     :return:
     """
     return None
+
+
+subapi_parents = fastapi.FastAPI()
+
+
+@subapi.get('/parents')
+async def fetch_parents(limit: int = 10):
+    """
+
+    :return:
+    """
+    return []
+
+
+@app.get(f'/is_alive')
+@app.get(f'{PATH}/is_alive')
+def is_alive():
+    return {'message': 'Server is alive'}
+
+
+app.mount(PATH, subapi)
 
 
 if __name__ == "__main__":
