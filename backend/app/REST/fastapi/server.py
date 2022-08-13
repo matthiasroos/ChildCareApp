@@ -1,7 +1,10 @@
+import typing
+
 import fastapi
 import uvicorn
 
 import database.queries
+import database.schemas
 
 
 app = fastapi.FastAPI()
@@ -11,7 +14,7 @@ subapi = fastapi.FastAPI()
 PATH = '/rest/fastapi/v1'
 
 
-@subapi.get('/children')
+@subapi.get('/children', response_model=typing.List[database.schemas.Child])
 async def fetch_children(recent: bool = False, limit: int = 10):
     """
 
