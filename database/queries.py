@@ -39,8 +39,8 @@ def get_children(recent: bool, limit: int):
                 from_obj=model,
                 columns=model.__table__.columns,
             ),
-        )
-    return {'children': [child for child in children.all()][:limit], 'recent': recent}
+        ).all()
+    return [child for child in children][:limit]
 
 
 def post_children(child: dict):
