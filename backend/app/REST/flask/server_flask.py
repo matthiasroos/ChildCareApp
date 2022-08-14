@@ -18,8 +18,12 @@ def get(recent: bool = False, limit: int = 10):
     # workaround according to the following discussion:
     # https://stackoverflow.com/questions/65622045/pydantic-convert-to-jsonable-dict-not-full-json-string
     result_ = [json.loads(database.schemas.Child.from_orm(r).json()) for r in result]
-    result_json = flask.jsonify(result_)
-    return result_json
+    response = app.response_class(
+        response=json.dumps(result_),
+        status=200,
+        content_type='application/json',
+    )
+    return response
 
 
 if __name__ == '__main__':
