@@ -1,4 +1,7 @@
+import uuid
+
 import sqlalchemy
+import sqlalchemy.dialects.postgresql
 import sqlalchemy.orm
 
 
@@ -11,7 +14,9 @@ class Child(Base):
     """
     __tablename__ = 'children'
 
-    child_id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    child_id = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     name = sqlalchemy.Column(sqlalchemy.String)
     sur_name = sqlalchemy.Column(sqlalchemy.String)
     birth_day = sqlalchemy.Column(sqlalchemy.Date)

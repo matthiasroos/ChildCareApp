@@ -1,10 +1,11 @@
 import datetime
+import uuid
 
 import pydantic
 
 
 class Child(pydantic.BaseModel):
-    child_id: int
+    child_id: uuid.UUID
     name: str
     sur_name: str
     birth_day: datetime.date
@@ -12,4 +13,3 @@ class Child(pydantic.BaseModel):
 
     class Config:
         orm_mode = True
-

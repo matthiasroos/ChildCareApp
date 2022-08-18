@@ -121,9 +121,10 @@ definitions:
       - birthday
     properties:
       id:
-        type: integer
+        type: string
+        format: uuid
         description: Unique identifier
-        example: 123
+        example: "12345678-1234-5678-1234-567812345678"
         readOnly: true
       name:
         type: string
@@ -172,9 +173,10 @@ definitions:
       - telefone
     properties:
       id:
-        type: integer
+        type: string
+        format: uuid
         description: Unique identifier
-        example: 123
+        example: "12345678-1234-5678-1234-567812345678"
         readOnly: true
       children:
         type: array

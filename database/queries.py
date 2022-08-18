@@ -17,7 +17,7 @@ def create_connection():
     db_password = os.environ.get('DB_PASSWORD')
     db_host = os.environ.get('DB_HOST')
     db_schema = os.environ.get('DB_SCHEMA')
-    engine = sqlalchemy.create_engine(f'mysql://{db_user}:{db_password}@{db_host}/{db_schema}')
+    engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}')
     connection = engine.connect()
 
     return connection
