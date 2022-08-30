@@ -1,4 +1,5 @@
 import typing
+import uuid
 
 import fastapi
 import uvicorn
@@ -20,23 +21,28 @@ async def fetch_children(recent: bool = False, limit: int = 10):
     return result
 
 
-@app.get('/children/{child_id}')
-async def fetch_child(child_id: int = fastapi.Path(..., title='ID of the child to get')):
+@app.get('/children/{child_id}', response_model=database.schemas.Child)
+async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
     """
 
     :return:
     """
-    return None
+    result = database.queries.get_child(child_id=child_id)
+    return result
 
 
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
-async def create_child(child: dict):
+async def create_child(child: database.schemas.ChildBase):
     """
 
     :param child:
     :return:
     """
-    return None
+    child_id = uuid.uuid4()
+    child_dict = child.dict()
+    child_dict['child_id'] = child_id
+    _ = database.queries.post_children(child=child_dict)
+    return child_id
 
 
 @app.delete('/children')
