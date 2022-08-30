@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import dotenv
 import sqlalchemy
@@ -50,26 +51,33 @@ def post_children(child: dict):
     :param child:
     :return:
     """
-
     connection = create_connection()
-    children_table = database.tables.children_table
-    connection.execute(sqlalchemy.insert(children_table).values(name=child['name'],
-                                                                sur_name=child['sur_name'],
-                                                                birth_day=child['birth_day']))
-
+    with sqlalchemy.orm.Session(connection) as session:
+        session.execute(sqlalchemy.insert(database.models.Child).values(child_id=child['child_id'],
+                                                                        name=child['name'],
+                                                                        sur_name=child['sur_name'],
+                                                                        birth_day=child['birth_day']))
+        session.commit()
     return
 
 
-def get_child(child_id: int):
+def get_child(child_id: uuid.UUID):
     """
 
 
     :param child_id:
     :return:
     """
-    # child = CHILDREN.get(child_id)
-    # return child or ('Not found', 404)
-    return
+    connection = create_connection()
+    model = database.models.Child
+    with sqlalchemy.orm.Session(connection) as session:
+        child = session.execute(
+            sqlalchemy.sql.select(
+                from_obj=model,
+                columns=model.__table__.columns,
+            ).where(model.child_id == child_id)
+        ).first()
+    return child
 
 
 def put_child(child_id: int, changed_attributes: dict):
