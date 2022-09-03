@@ -4,6 +4,12 @@ import uuid
 import pydantic
 
 
+class User(pydantic.BaseModel):
+    user_name: str
+    salt: str
+    hashed_password: str
+
+
 class ChildBase(pydantic.BaseModel):
     name: str
     sur_name: str

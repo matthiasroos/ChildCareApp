@@ -24,6 +24,38 @@ def create_connection():
     return connection
 
 
+def get_user(user_name: str):
+    """
+    Fetch user.
+
+    :param user_name:
+    :return:
+    """
+    connection = create_connection()
+    user = database.models.User
+    with sqlalchemy.orm.Session(connection) as session:
+        child = session.execute(
+            sqlalchemy.sql.select(
+                from_obj=user,
+                columns=user.__table__.columns,
+            ).where(user.user_name == user_name)
+        ).first()
+    return child
+
+
+def create_user(user: dict):
+    """
+
+    :param user:
+    :return:
+    """
+    connection = create_connection()
+    with sqlalchemy.orm.Session(connection) as session:
+        session.execute(sqlalchemy.insert(database.models.User).values(**user))
+        session.commit()
+    return
+
+
 def get_children(recent: bool, limit: int):
     """
     Fetch all children.

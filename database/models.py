@@ -8,6 +8,17 @@ import sqlalchemy.orm
 Base = sqlalchemy.orm.declarative_base()
 
 
+class User(Base):
+    """
+    Table Users
+    """
+    __tablename__ = 'users'
+
+    user_name = sqlalchemy.Column(sqlalchemy.String, primary_key=True, unique=True, index=True)
+    salt = sqlalchemy.Column(sqlalchemy.String)
+    hashed_password = sqlalchemy.Column(sqlalchemy.String)
+
+
 class Child(Base):
     """
     Table Children
