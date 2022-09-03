@@ -20,7 +20,7 @@ def upgrade():
     op.create_table('users',
                     sa.Column('user_name', sa.String(15), primary_key=True, index=True, unique=True),
                     sa.Column('salt', sa.String(16)),
-                    sa.Column('hashed_password', sa.String(64)))
+                    sa.Column('hashed_password', sa.String(128)))
 
 
 def downgrade():
