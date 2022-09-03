@@ -32,7 +32,7 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
 
 @app.get('/children', response_model=typing.List[database.schemas.Child])
 async def fetch_children(recent: bool = False, limit: int = 10,
-                         _=fastapi.Depends(check_credentials)):
+                         authenticated: bool = fastapi.Depends(check_credentials)):
     """
 
     :return:
@@ -42,7 +42,8 @@ async def fetch_children(recent: bool = False, limit: int = 10,
 
 
 @app.get('/children/{child_id}', response_model=database.schemas.Child)
-async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
+async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
+                      authenticated: bool = fastapi.Depends(check_credentials)):
     """
 
     :return:
@@ -52,10 +53,10 @@ async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the c
 
 
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
-async def create_child(child: database.schemas.ChildBase):
+async def create_child(child: database.schemas.ChildBase,
+                       authenticated: bool = fastapi.Depends(check_credentials)):
     """
 
-    :param child:
     :return:
     """
     child_id = uuid.uuid4()
@@ -65,21 +66,22 @@ async def create_child(child: database.schemas.ChildBase):
     return child_id
 
 
-@app.delete('/children')
-async def delete_child(child_id: uuid.UUID):
+@app.delete('/children/{child_id}')
+async def delete_child(child_id: uuid.UUID,
+                       authenticated: bool = fastapi.Depends(check_credentials)):
     """
 
-    :param child_id:
     :return:
     """
-    return None
+    _ = database.queries.delete_child(child_id=child_id)
+    return
 
 
 @app.post('/children/{child_id}/caretimes')
-async def add_caretime(child_id: uuid.UUID, ):
+async def add_caretime(child_id: uuid.UUID,
+                       authenticated: bool = fastapi.Depends(check_credentials)):
     """
 
-    :param child_id:
     :return:
     """
     return None

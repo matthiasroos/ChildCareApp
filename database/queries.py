@@ -32,15 +32,15 @@ def get_user(user_name: str):
     :return:
     """
     connection = create_connection()
-    user = database.models.User
+    user_model = database.models.User
     with sqlalchemy.orm.Session(connection) as session:
-        child = session.execute(
+        user = session.execute(
             sqlalchemy.sql.select(
-                from_obj=user,
-                columns=user.__table__.columns,
-            ).where(user.user_name == user_name)
+                from_obj=user_model,
+                columns=user_model.__table__.columns,
+            ).where(user_model.user_name == user_name)
         ).first()
-    return child
+    return user
 
 
 def create_user(user: dict):
@@ -65,12 +65,12 @@ def get_children(recent: bool, limit: int):
     :return:
     """
     connection = create_connection()
-    model = database.models.Child
+    child_model = database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         children = session.execute(
             sqlalchemy.sql.select(
-                from_obj=model,
-                columns=model.__table__.columns,
+                from_obj=child_model,
+                columns=child_model.__table__.columns,
             ),
         ).all()
     return [child for child in children][:limit]
@@ -101,13 +101,13 @@ def get_child(child_id: uuid.UUID):
     :return:
     """
     connection = create_connection()
-    model = database.models.Child
+    child_model = database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         child = session.execute(
             sqlalchemy.sql.select(
-                from_obj=model,
-                columns=model.__table__.columns,
-            ).where(model.child_id == child_id)
+                from_obj=child_model,
+                columns=child_model.__table__.columns,
+            ).where(child_model.child_id == child_id)
         ).first()
     return child
 
@@ -123,3 +123,16 @@ def put_child(child_id: int, changed_attributes: dict):
     # child_dict.update({key: value for key, value in changed_attributes.items()})
     # CHILDREN.update(child_dict)
     return 'OK', 200
+
+
+def delete_child(child_id: uuid.UUID):
+    """
+
+    :param child_id:
+    :return:
+    """
+    connection = create_connection()
+    child_model = database.models.Child
+    with sqlalchemy.orm.Session(connection) as session:
+        session.execute(sqlalchemy.delete(child_model).where(child_model.child_id == child_id))
+        session.commit()
