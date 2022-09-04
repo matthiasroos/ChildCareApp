@@ -66,7 +66,19 @@ async def create_child(child: database.schemas.ChildBase,
     return child_id
 
 
-@app.delete('/children/{child_id}')
+@app.put('/children/{child_id}/update')
+async def update_child(child_id: uuid.UUID, updates_for_child: database.schemas.ChildUpdate,
+                       authenticated: bool = fastapi.Depends(check_credentials)):
+    """
+
+    :return:
+    """
+    updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
+    _ = database.queries.update_child(child_id=child_id, updates_for_child=updates_dict)
+    return
+
+
+@app.delete('/children/{child_id}/delete')
 async def delete_child(child_id: uuid.UUID,
                        authenticated: bool = fastapi.Depends(check_credentials)):
     """

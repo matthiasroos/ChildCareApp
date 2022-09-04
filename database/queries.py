@@ -1,4 +1,5 @@
 import os
+import typing
 import uuid
 
 import dotenv
@@ -109,17 +110,21 @@ def fetch_child(child_id: uuid.UUID):
     return child
 
 
-def put_child(child_id: int, changed_attributes: dict):
+def update_child(child_id: uuid.UUID, updates_for_child: typing.Dict):
     """
 
 
     :param child_id:
+    :param updates_for_child:
     :return:
     """
-    # child_dict = CHILDREN[child_id]
-    # child_dict.update({key: value for key, value in changed_attributes.items()})
-    # CHILDREN.update(child_dict)
-    return 'OK', 200
+    connection = create_connection()
+    child_model = database.models.Child
+    with sqlalchemy.orm.Session(connection) as session:
+        session.execute(sqlalchemy.update(child_model).where(child_model.child_id == child_id)
+                        .values(**updates_for_child))
+        session.commit()
+    return
 
 
 def delete_child(child_id: uuid.UUID):
