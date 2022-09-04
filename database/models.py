@@ -32,3 +32,18 @@ class Child(Base):
     sur_name = sqlalchemy.Column(sqlalchemy.String)
     birth_day = sqlalchemy.Column(sqlalchemy.Date)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
+
+
+class Caretime(Base):
+    """
+    Table Caretimes
+    """
+    __tablename__ = 'caretimes'
+
+    child_id = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.UUID(as_uuid=True), primary_key=True,
+    )
+    start_time = sqlalchemy.Column(sqlalchemy.DateTime, primary_key=True)
+    stop_time = sqlalchemy.Column(sqlalchemy.DateTime)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime)
+    modified_at = sqlalchemy.Column(sqlalchemy.DateTime)

@@ -38,3 +38,16 @@ class ChildUpdate(pydantic.BaseModel):
             raise ValueError('One parameter must be at least given for the update')
         return values
 
+
+class CaretimeBase(pydantic.BaseModel):
+    child_id: uuid.UUID
+    start_time: typing.Optional[datetime.datetime]
+    stop_time: typing.Optional[datetime.datetime]
+
+
+class Caretime(CaretimeBase):
+    created_at: datetime.datetime
+    modified_at: datetime.datetime
+
+    class Config:
+        orm_mode = True
