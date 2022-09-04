@@ -27,7 +27,7 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return
+    return authenticated
 
 
 @app.get('/children', response_model=typing.List[database.schemas.Child])
@@ -37,7 +37,7 @@ async def fetch_children(recent: bool = False, limit: int = 10,
 
     :return:
     """
-    result = database.queries.get_children(recent=recent, limit=limit)
+    result = database.queries.fetch_children(recent=recent, limit=limit)
     return result
 
 
@@ -48,7 +48,7 @@ async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the c
 
     :return:
     """
-    result = database.queries.get_child(child_id=child_id)
+    result = database.queries.fetch_child(child_id=child_id)
     return result
 
 
@@ -62,7 +62,7 @@ async def create_child(child: database.schemas.ChildBase,
     child_id = uuid.uuid4()
     child_dict = child.dict()
     child_dict['child_id'] = child_id
-    _ = database.queries.post_children(child=child_dict)
+    _ = database.queries.create_child(child=child_dict)
     return child_id
 
 

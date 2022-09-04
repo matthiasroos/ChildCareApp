@@ -24,7 +24,7 @@ def create_new_user(user_name: str, password: str):
 
 def authenticate_user(user_name: str, password: str) -> bool:
 
-    user = database.queries.get_user(user_name=user_name)
+    user = database.queries.fetch_user(user_name=user_name)
     if not user:
         return False
     salt_b64_enc = bytes(user.salt, 'utf8')

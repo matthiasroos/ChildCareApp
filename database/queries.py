@@ -24,7 +24,7 @@ def create_connection():
     return connection
 
 
-def get_user(user_name: str):
+def fetch_user(user_name: str):
     """
     Fetch user.
 
@@ -56,7 +56,7 @@ def create_user(user: dict):
     return
 
 
-def get_children(recent: bool, limit: int):
+def fetch_children(recent: bool, limit: int):
     """
     Fetch all children.
 
@@ -76,7 +76,7 @@ def get_children(recent: bool, limit: int):
     return [child for child in children][:limit]
 
 
-def post_children(child: dict):
+def create_child(child: dict):
     """
 
 
@@ -85,15 +85,12 @@ def post_children(child: dict):
     """
     connection = create_connection()
     with sqlalchemy.orm.Session(connection) as session:
-        session.execute(sqlalchemy.insert(database.models.Child).values(child_id=child['child_id'],
-                                                                        name=child['name'],
-                                                                        sur_name=child['sur_name'],
-                                                                        birth_day=child['birth_day']))
+        session.execute(sqlalchemy.insert(database.models.Child).values(**child))
         session.commit()
     return
 
 
-def get_child(child_id: uuid.UUID):
+def fetch_child(child_id: uuid.UUID):
     """
 
 
