@@ -19,8 +19,9 @@ depends_on = None
 
 def upgrade():
     op.create_table('caretimes',
-                    sa.Column('child_id', UUID(as_uuid=True), primary_key=True, index=True),
-                    sa.Column('start_time', sa.DateTime(), primary_key=True),
+                    sa.Column('caretime_id', UUID(as_uuid=True), primary_key=True, index=True, unique=True),
+                    sa.Column('child_id', UUID(as_uuid=True)),
+                    sa.Column('start_time', sa.DateTime()),
                     sa.Column('stop_time', sa.DateTime()),
                     sa.Column('created_at', sa.DateTime(), server_default=sa.func.now()),
                     sa.Column('modified_at', sa.DateTime(), server_default=sa.func.now(), server_onupdate=sa.func.now()))

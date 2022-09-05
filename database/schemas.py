@@ -40,6 +40,7 @@ class ChildUpdate(pydantic.BaseModel):
 
 
 class CaretimeBase(pydantic.BaseModel):
+    caretime_id: uuid.UUID
     child_id: uuid.UUID
     start_time: typing.Optional[datetime.datetime]
     stop_time: typing.Optional[datetime.datetime]

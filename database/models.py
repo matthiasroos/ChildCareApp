@@ -40,10 +40,11 @@ class Caretime(Base):
     """
     __tablename__ = 'caretimes'
 
-    child_id = sqlalchemy.Column(
-        sqlalchemy.dialects.postgresql.UUID(as_uuid=True), primary_key=True,
+    caretime_id = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    start_time = sqlalchemy.Column(sqlalchemy.DateTime, primary_key=True)
+    child_id = sqlalchemy.Column(sqlalchemy.dialects.postgresql.UUID(as_uuid=True))
+    start_time = sqlalchemy.Column(sqlalchemy.DateTime)
     stop_time = sqlalchemy.Column(sqlalchemy.DateTime)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
     modified_at = sqlalchemy.Column(sqlalchemy.DateTime)
