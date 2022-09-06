@@ -14,8 +14,6 @@ import database.usermanagement
 
 app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
 
-security = fastapi.security.HTTPBasic()
-
 
 @app.middleware('http')
 async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
@@ -35,20 +33,6 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     return response
 
 
-def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fastapi.Depends(security)):
-    """
-
-    """
-    authenticated = database.usermanagement.authenticate_user(credentials.username, credentials.password)
-    if not authenticated:
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return authenticated
-
-
 @app.get('/children', response_model=typing.List[database.schemas.Child])
 async def fetch_children(recent: bool = False, limit: int = 10):
     """
@@ -60,8 +44,7 @@ async def fetch_children(recent: bool = False, limit: int = 10):
 
 
 @app.get('/children/{child_id}', response_model=database.schemas.Child)
-async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
-                      authenticated: bool = fastapi.Depends(check_credentials)):
+async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
     """
 
     :return:
@@ -71,8 +54,7 @@ async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the c
 
 
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
-async def create_child(child: database.schemas.ChildBase,
-                       authenticated: bool = fastapi.Depends(check_credentials)):
+async def create_child(child: database.schemas.ChildBase):
     """
 
     :return:
@@ -85,8 +67,7 @@ async def create_child(child: database.schemas.ChildBase,
 
 
 @app.put('/children/{child_id}/update')
-async def update_child(child_id: uuid.UUID, updates_for_child: database.schemas.ChildUpdate,
-                       authenticated: bool = fastapi.Depends(check_credentials)):
+async def update_child(child_id: uuid.UUID, updates_for_child: database.schemas.ChildUpdate):
     """
 
     :return:
@@ -97,8 +78,7 @@ async def update_child(child_id: uuid.UUID, updates_for_child: database.schemas.
 
 
 @app.delete('/children/{child_id}/delete')
-async def delete_child(child_id: uuid.UUID,
-                       authenticated: bool = fastapi.Depends(check_credentials)):
+async def delete_child(child_id: uuid.UUID):
     """
 
     :return:
@@ -109,7 +89,7 @@ async def delete_child(child_id: uuid.UUID,
 
 @app.post('/children/{child_id}/caretimes')
 async def add_caretime(child_id: uuid.UUID,
-                       authenticated: bool = fastapi.Depends(check_credentials)):
+                       ):
     """
 
     :return:
