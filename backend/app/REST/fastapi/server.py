@@ -1,3 +1,4 @@
+import base64
 import secrets
 import typing
 import uuid
@@ -16,6 +17,24 @@ app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
 security = fastapi.security.HTTPBasic()
 
 
+@app.middleware('http')
+async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
+    """
+
+    :return:
+    """
+    username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
+    authenticated = database.usermanagement.authenticate_user(username.decode('utf-8'), password.decode('utf-8'))
+    if not authenticated:
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    response = await call_next(request)
+    return response
+
+
 def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fastapi.Depends(security)):
     """
 
@@ -31,8 +50,7 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
 
 
 @app.get('/children', response_model=typing.List[database.schemas.Child])
-async def fetch_children(recent: bool = False, limit: int = 10,
-                         authenticated: bool = fastapi.Depends(check_credentials)):
+async def fetch_children(recent: bool = False, limit: int = 10):
     """
 
     :return:
@@ -85,7 +103,7 @@ async def delete_child(child_id: uuid.UUID,
 
     :return:
     """
-    _ = database.queries.delete_child(child_id=child_id)
+    database.queries.delete_child(child_id=child_id)
     return
 
 
