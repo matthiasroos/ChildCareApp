@@ -17,6 +17,7 @@ class User(Base):
     user_name = sqlalchemy.Column(sqlalchemy.String, primary_key=True, unique=True, index=True)
     salt = sqlalchemy.Column(sqlalchemy.String)
     hashed_password = sqlalchemy.Column(sqlalchemy.String)
+    role = sqlalchemy.Column(sqlalchemy.String)
 
 
 class Child(Base):

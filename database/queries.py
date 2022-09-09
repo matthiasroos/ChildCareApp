@@ -57,6 +57,22 @@ def create_user(user: dict):
     return
 
 
+def edit_user(user_name: str, new_values: typing.Dict[str, typing.Any]):
+    """
+
+    :param user_name:
+    :param new_values:
+    :return:
+    """
+    connection = create_connection()
+    with sqlalchemy.orm.Session(connection) as session:
+        session.execute(sqlalchemy.update(database.models.User).
+                        where(database.models.User.user_name == user_name).
+                        values(**new_values))
+        session.commit()
+    return
+
+
 def fetch_children(recent: bool, limit: int):
     """
     Fetch all children.

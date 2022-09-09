@@ -9,6 +9,7 @@ class User(pydantic.BaseModel):
     user_name: str
     salt: str
     hashed_password: str
+    role: str
 
 
 class ChildBase(pydantic.BaseModel):
