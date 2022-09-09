@@ -1,10 +1,16 @@
 import base64
+import datetime
 import secrets
 import typing
 import uuid
 
 import fastapi
+import fastapi.requests
+import fastapi.responses
 import fastapi.security
+import starlette.authentication
+import starlette.middleware.authentication
+import starlette.requests
 import uvicorn
 
 import database.queries
@@ -15,7 +21,47 @@ import database.usermanagement
 app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
 
 
-@app.middleware('http')
+class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
+    """
+    Backend for Basic Authentication
+    """
+    def __init__(self, role: str):
+        super().__init__()
+        self.role = role
+
+    async def authenticate(self, conn: fastapi.requests.HTTPConnection) \
+            -> typing.Optional[typing.Tuple[starlette.authentication.AuthCredentials,
+                                            starlette.authentication.BaseUser]]:
+        """
+
+        :param conn:
+        :return:
+        """
+        if 'Authorization' not in conn.headers:
+            return
+
+        auth_header = conn.headers['Authorization']
+        username, password = base64.b64decode(auth_header.split()[1]).split(b':')
+        authenticated = database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+                                                                  password=password.decode('utf-8'),
+                                                                  role=self.role)
+        if not authenticated:
+            raise starlette.authentication.AuthenticationError('Invalid basic auth credentials')
+        return starlette.authentication.AuthCredentials(['authenticated']), \
+            starlette.authentication.SimpleUser(username)
+
+
+def default_on_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
+    """function executed on error"""
+    return fastapi.responses.PlainTextResponse(str(exc), status_code=401)
+
+
+app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
+                   backend=BasicAuthBackend(role='admin'),
+                   on_error=default_on_error)
+
+
+#@app.middleware('http')
 async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
     """
 

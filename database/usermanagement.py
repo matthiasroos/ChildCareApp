@@ -22,7 +22,7 @@ def create_new_user(user_name: str, password: str):
     database.queries.create_user(user=user)
 
 
-def authenticate_user(user_name: str, password: str) -> bool:
+def authenticate_user(user_name: str, password: str, role: str) -> bool:
 
     user = database.queries.fetch_user(user_name=user_name)
     if not user:
@@ -31,4 +31,4 @@ def authenticate_user(user_name: str, password: str) -> bool:
     password_b64_enc = base64.b64encode(bytes(password, 'utf8'))
     pw_hash = hashlib.blake2b(password_b64_enc, salt=salt_b64_enc).hexdigest()
 
-    return secrets.compare_digest(pw_hash, user.hashed_password)
+    return secrets.compare_digest(pw_hash, user.hashed_password) and secrets.compare_digest(role, user.role)
