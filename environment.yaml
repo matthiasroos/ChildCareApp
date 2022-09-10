@@ -14,4 +14,5 @@ dependencies:
   - python-dotenv
   - psycopg2
   - alembic
+  - pytest
 prefix: /opt/miniconda3/envs/childcareapp
