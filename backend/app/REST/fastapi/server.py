@@ -1,6 +1,5 @@
 import base64
 import datetime
-import secrets
 import typing
 import uuid
 
@@ -13,9 +12,9 @@ import starlette.middleware.authentication
 import starlette.requests
 import uvicorn
 
-import database.queries
-import database.schemas
-import database.usermanagement
+import backend.database.queries
+import backend.database.schemas
+import backend.database.usermanagement
 
 
 app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
@@ -42,9 +41,9 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
 
         auth_header = conn.headers['Authorization']
         username, password = base64.b64decode(auth_header.split()[1]).split(b':')
-        authenticated = database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
-                                                                  password=password.decode('utf-8'),
-                                                                  role=self.role)
+        authenticated = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+                                                                          password=password.decode('utf-8'),
+                                                                          role=self.role)
         if not authenticated:
             raise starlette.authentication.AuthenticationError('Invalid basic auth credentials')
         return starlette.authentication.AuthCredentials(['authenticated']), \
@@ -68,7 +67,7 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     :return:
     """
     username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
-    authenticated = database.usermanagement.authenticate_user(username.decode('utf-8'), password.decode('utf-8'))
+    authenticated = backend.database.usermanagement.authenticate_user(username.decode('utf-8'), password.decode('utf-8'))
     if not authenticated:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
@@ -79,28 +78,28 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     return response
 
 
-@app.get('/children', response_model=typing.List[database.schemas.Child])
+@app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 async def fetch_children(recent: bool = False, limit: int = 10):
     """
 
     :return:
     """
-    result = database.queries.fetch_children(recent=recent, limit=limit)
+    result = backend.database.queries.fetch_children(recent=recent, limit=limit)
     return result
 
 
-@app.get('/children/{child_id}', response_model=database.schemas.Child)
+@app.get('/children/{child_id}', response_model=backend.database.schemas.Child)
 async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
     """
 
     :return:
     """
-    result = database.queries.fetch_child(child_id=child_id)
+    result = backend.database.queries.fetch_child(child_id=child_id)
     return result
 
 
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
-async def create_child(child: database.schemas.ChildBase):
+async def create_child(child: backend.database.schemas.ChildBase):
     """
 
     :return:
@@ -108,18 +107,18 @@ async def create_child(child: database.schemas.ChildBase):
     child_id = uuid.uuid4()
     child_dict = child.dict()
     child_dict['child_id'] = child_id
-    _ = database.queries.create_child(child=child_dict)
+    _ = backend.database.queries.create_child(child=child_dict)
     return child_id
 
 
 @app.put('/children/{child_id}/update')
-async def update_child(child_id: uuid.UUID, updates_for_child: database.schemas.ChildUpdate):
+async def update_child(child_id: uuid.UUID, updates_for_child: backend.database.schemas.ChildUpdate):
     """
 
     :return:
     """
     updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
-    _ = database.queries.update_child(child_id=child_id, updates_for_child=updates_dict)
+    _ = backend.database.queries.update_child(child_id=child_id, updates_for_child=updates_dict)
     return
 
 
@@ -129,7 +128,7 @@ async def delete_child(child_id: uuid.UUID):
 
     :return:
     """
-    database.queries.delete_child(child_id=child_id)
+    backend.database.queries.delete_child(child_id=child_id)
     return
 
 

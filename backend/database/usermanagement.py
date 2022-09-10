@@ -3,7 +3,7 @@ import hashlib
 import secrets
 import string
 
-import database.queries
+import backend.database.queries
 
 
 def create_new_user(user_name: str, password: str):
@@ -19,12 +19,12 @@ def create_new_user(user_name: str, password: str):
     user['salt'] = salt
     user['hashed_password'] = pw_hash
 
-    database.queries.create_user(user=user)
+    backend.database.queries.create_user(user=user)
 
 
 def authenticate_user(user_name: str, password: str, role: str) -> bool:
 
-    user = database.queries.fetch_user(user_name=user_name)
+    user = backend.database.queries.fetch_user(user_name=user_name)
     if not user:
         return False
     salt_b64_enc = bytes(user.salt, 'utf8')

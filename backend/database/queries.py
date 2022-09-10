@@ -6,7 +6,7 @@ import dotenv
 import sqlalchemy
 import sqlalchemy.orm
 
-import database.models
+import backend.database.models
 
 
 def create_connection():
@@ -33,7 +33,7 @@ def fetch_user(user_name: str):
     :return:
     """
     connection = create_connection()
-    user_model = database.models.User
+    user_model = backend.database.models.User
     with sqlalchemy.orm.Session(connection) as session:
         user = session.execute(
             sqlalchemy.sql.select(
@@ -52,7 +52,7 @@ def create_user(user: dict):
     """
     connection = create_connection()
     with sqlalchemy.orm.Session(connection) as session:
-        session.execute(sqlalchemy.insert(database.models.User).values(**user))
+        session.execute(sqlalchemy.insert(backend.database.models.User).values(**user))
         session.commit()
     return
 
@@ -66,8 +66,8 @@ def edit_user(user_name: str, new_values: typing.Dict[str, typing.Any]):
     """
     connection = create_connection()
     with sqlalchemy.orm.Session(connection) as session:
-        session.execute(sqlalchemy.update(database.models.User).
-                        where(database.models.User.user_name == user_name).
+        session.execute(sqlalchemy.update(backend.database.models.User).
+                        where(backend.database.models.User.user_name == user_name).
                         values(**new_values))
         session.commit()
     return
@@ -82,7 +82,7 @@ def fetch_children(recent: bool, limit: int):
     :return:
     """
     connection = create_connection()
-    child_model = database.models.Child
+    child_model = backend.database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         children = session.execute(
             sqlalchemy.sql.select(
@@ -102,7 +102,7 @@ def create_child(child: dict):
     """
     connection = create_connection()
     with sqlalchemy.orm.Session(connection) as session:
-        session.execute(sqlalchemy.insert(database.models.Child).values(**child))
+        session.execute(sqlalchemy.insert(backend.database.models.Child).values(**child))
         session.commit()
     return
 
@@ -115,7 +115,7 @@ def fetch_child(child_id: uuid.UUID):
     :return:
     """
     connection = create_connection()
-    child_model = database.models.Child
+    child_model = backend.database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         child = session.execute(
             sqlalchemy.sql.select(
@@ -135,7 +135,7 @@ def update_child(child_id: uuid.UUID, updates_for_child: typing.Dict):
     :return:
     """
     connection = create_connection()
-    child_model = database.models.Child
+    child_model = backend.database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         session.execute(sqlalchemy.update(child_model).where(child_model.child_id == child_id)
                         .values(**updates_for_child))
@@ -150,7 +150,7 @@ def delete_child(child_id: uuid.UUID):
     :return:
     """
     connection = create_connection()
-    child_model = database.models.Child
+    child_model = backend.database.models.Child
     with sqlalchemy.orm.Session(connection) as session:
         session.execute(sqlalchemy.delete(child_model).where(child_model.child_id == child_id))
         session.commit()

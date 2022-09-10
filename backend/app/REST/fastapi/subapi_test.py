@@ -3,7 +3,7 @@ import fastapi.security
 import uvicorn
 
 
-import database.usermanagement
+import backend.database.usermanagement
 
 PATH = '/test'
 
@@ -16,7 +16,7 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
     """
 
     """
-    authenticated = database.usermanagement.authenticate_user(credentials.username, credentials.password)
+    authenticated = backend.database.usermanagement.authenticate_user(credentials.username, credentials.password)
     if not authenticated:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
