@@ -45,14 +45,16 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
                                                                           password=password.decode('utf-8'),
                                                                           role=self.role)
         if not authenticated:
-            raise starlette.authentication.AuthenticationError('Invalid basic auth credentials')
+            raise starlette.authentication.AuthenticationError('Invalid credentials')
         return starlette.authentication.AuthCredentials(['authenticated']), \
             starlette.authentication.SimpleUser(username)
 
 
 def default_on_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
     """function executed on error"""
-    return fastapi.responses.PlainTextResponse(str(exc), status_code=401)
+    return fastapi.responses.PlainTextResponse(str(exc),
+                                               status_code=401,
+                                               headers={"WWW-Authenticate": "Basic"})
 
 
 app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,

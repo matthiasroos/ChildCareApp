@@ -16,21 +16,23 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
     """
 
     """
-    authenticated = backend.database.usermanagement.authenticate_user(credentials.username, credentials.password)
+    authenticated = backend.database.usermanagement.authenticate_user(credentials.username,
+                                                                      credentials.password,
+                                                                      'admin')
     if not authenticated:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return authenticated
+    return
 
 
-subapi_children = fastapi.FastAPI()
+subapi_children = fastapi.FastAPI(dependencies=[fastapi.Depends(check_credentials)])
 
 
 @subapi_children.get('/')
-async def fetch_children(authenticated: bool = fastapi.Depends(check_credentials)):
+async def fetch_children():
     return {'message': 'list of children '}
 
 
@@ -38,18 +40,18 @@ subapi_parents = fastapi.FastAPI()
 
 
 @subapi_parents.get('/')
-async def fetch_parents(limit: int = 10, authenticated: bool = fastapi.Depends(check_credentials)):
+async def fetch_parents(limit: int = 10):
     return {'message': 'list of parents '}
 
 
 @subapi_parents.get('/parents/is_alive')
-async def is_alive(authenticated: bool = fastapi.Depends(check_credentials)):
+async def is_alive():
     return {'message': 'parents Server is alive'}
 
 
 @app.get(f'/is_alive')
 @app.get(f'{PATH}/is_alive')
-def is_alive(authenticated: bool = fastapi.Depends(check_credentials)):
+def is_alive():
     return {'message': 'Server is alive'}
 
 
