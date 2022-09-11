@@ -5,6 +5,8 @@ import flask_restful
 
 import backend.database.queries
 import backend.database.schemas
+from backend.app.REST.flask.authentication import auth_required
+
 
 app = flask.Flask(__name__)
 api = flask_restful.Api(app)
@@ -13,15 +15,10 @@ PREFIX = '/rest/flask/v1'
 
 
 class Children(flask_restful.Resource):
+    method_decorators = [auth_required(role='admin')]
 
     def get(self, recent: bool = False, limit: int = 10):
-        """
-
-        :param recent:
-        :param limit:
-        :return:
-        """
-        result = backend.database.queries.get_children(recent=recent, limit=limit)
+        result = backend.database.queries.fetch_children(recent=recent, limit=limit)
         # Pydantic has currently no functionality to directly create a jsonable dict,
         # workaround according to the following discussion:
         # https://stackoverflow.com/questions/65622045/pydantic-convert-to-jsonable-dict-not-full-json-string
