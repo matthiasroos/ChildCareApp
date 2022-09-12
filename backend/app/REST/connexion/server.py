@@ -4,7 +4,7 @@ import connexion
 
 app = connexion.App(
     __name__,
-    specification_dir='swagger/',
+    specification_dir='./.',
     options={'swagger_ui': False}
 )
 
