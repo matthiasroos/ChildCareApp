@@ -50,16 +50,16 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
             starlette.authentication.SimpleUser(username)
 
 
-def default_on_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
+def on_auth_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
     """function executed on error"""
-    return fastapi.responses.PlainTextResponse(str(exc),
-                                               status_code=401,
-                                               headers={"WWW-Authenticate": "Basic"})
+    return fastapi.responses.JSONResponse({'error': str(exc)},
+                                          status_code=401,
+                                          headers={"WWW-Authenticate": "Basic"})
 
 
 app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
                    backend=BasicAuthBackend(role='admin'),
-                   on_error=default_on_error)
+                   on_error=on_auth_error)
 
 
 #@app.middleware('http')
