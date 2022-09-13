@@ -1,8 +1,9 @@
 name: childcareapp
 channels:
   - defaults
+  - conda-forge
 dependencies:
-  - python=3.8
+  - python=3.10
   - kivy
   - flask
   - flask-restful
