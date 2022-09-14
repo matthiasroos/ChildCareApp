@@ -1,5 +1,6 @@
 import base64
 import datetime
+import threading
 import typing
 import uuid
 
@@ -7,9 +8,11 @@ import fastapi
 import fastapi.requests
 import fastapi.responses
 import fastapi.security
+import requests
 import starlette.authentication
 import starlette.middleware.authentication
 import starlette.requests
+import starlette.types
 import uvicorn
 
 import backend.database.queries
@@ -18,6 +21,60 @@ import backend.database.usermanagement
 
 
 app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
+
+
+class CloneRequestMiddleware:
+    """
+    Middleware for cloning the request (sending them to another server)
+    Implementation is following:
+    https://github.com/encode/starlette/pull/1519#issuecomment-1060633787
+    """
+
+    def __init__(self, app: starlette.types.ASGIApp, servers: typing.List[str]) -> None:
+        self.app = app
+        self.servers = servers
+
+    async def __call__(self, scope: starlette.types.Scope, receive: starlette.types.Receive,
+                       send: starlette.types.Send) -> None:
+        if scope['type'] != 'http':
+            return await self.app(scope, receive, send)
+
+        messages = []
+        more_body = True
+        while more_body:
+            message = await receive()
+            messages.append(message)
+            more_body = message.get('more_body', False)
+
+        body = b''.join([message.get('body', b'') for message in messages])
+
+        request = fastapi.requests.Request(scope)
+        for server in self.servers:
+            if request.method == 'GET':
+                thread = threading.Thread(target=getattr(requests, request.method.lower()),
+                                          kwargs={'url': f'{server}{scope["path"]}',
+                                                  'headers': dict(scope['headers'])})
+                thread.start()
+            elif request.method == 'POST':
+                thread = threading.Thread(target=getattr(requests, request.method.lower()),
+                                          kwargs={'url': f'{server}{scope["path"]}',
+                                                  'headers': dict(scope['headers']),
+                                                  'data': body})
+                thread.start()
+
+        # Dispatch to the ASGI callable
+        async def wrapped_receive():
+            # First up we want to return any messages we've stashed.
+            if messages:
+                return messages.pop(0)
+
+            # Once that's done we can just await any other messages.
+            return await receive()
+
+        await self.app(scope, wrapped_receive, send)
+
+
+app.add_middleware(CloneRequestMiddleware, servers=['http://localhost:8000/rest/flask/v2', ])
 
 
 class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
