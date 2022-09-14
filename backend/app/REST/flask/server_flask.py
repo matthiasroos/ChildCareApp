@@ -26,5 +26,18 @@ def get(recent: bool = False, limit: int = 10):
     return response
 
 
+@app.route(f'{PREFIX}/children', methods=['POST'])
+@auth_required(role='admin')
+def post():
+    result = backend.database.queries.fetch_child(child_id=flask.request.form['child_id'])
+    result_ = backend.app.REST.utils.serialize_result(result=result)
+    response = app.response_class(
+        response=json.dumps(result_),
+        status=200,
+        content_type='application/json',
+    )
+    return response
+
+
 if __name__ == '__main__':
     app.run(debug=False, host='localhost', port=8084)

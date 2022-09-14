@@ -100,6 +100,16 @@ async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the c
     return result
 
 
+@app.post('/children', response_model=backend.database.schemas.Child)
+async def fetch_one_child(body: dict):
+    """
+
+    :return:
+    """
+    result = backend.database.queries.fetch_child(child_id=body['child_id'])
+    return result
+
+
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
 async def create_child(child: backend.database.schemas.ChildBase):
     """
