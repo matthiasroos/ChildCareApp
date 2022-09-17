@@ -16,7 +16,7 @@ PREFIX = '/rest/flask/v1'
 
 
 class Children(flask_restful.Resource):
-    method_decorators = [auth_required(role='admin')]
+    method_decorators = [auth_required(required_role='admin')]
 
     def get(self, recent: bool = False, limit: int = 10):
         result = backend.database.queries.fetch_children(recent=recent, limit=limit)

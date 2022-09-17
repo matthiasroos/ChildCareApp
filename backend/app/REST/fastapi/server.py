@@ -81,9 +81,6 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
     """
     Backend for Basic Authentication
     """
-    def __init__(self, role: str):
-        super().__init__()
-        self.role = role
 
     async def authenticate(self, conn: fastapi.requests.HTTPConnection) \
             -> typing.Optional[typing.Tuple[starlette.authentication.AuthCredentials,
@@ -98,12 +95,11 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
 
         auth_header = conn.headers['Authorization']
         username, password = base64.b64decode(auth_header.split()[1]).split(b':')
-        authenticated = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
-                                                                          password=password.decode('utf-8'),
-                                                                          role=self.role)
+        authenticated, role = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+                                                                                password=password.decode('utf-8'))
         if not authenticated:
             raise starlette.authentication.AuthenticationError('Invalid credentials')
-        return starlette.authentication.AuthCredentials(['authenticated']), \
+        return starlette.authentication.AuthCredentials([role]), \
             starlette.authentication.SimpleUser(username)
 
 
@@ -115,7 +111,7 @@ def on_auth_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fast
 
 
 app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
-                   backend=BasicAuthBackend(role='admin'),
+                   backend=BasicAuthBackend(),
                    on_error=on_auth_error)
 
 
@@ -126,8 +122,9 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     :return:
     """
     username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
-    authenticated = backend.database.usermanagement.authenticate_user(username.decode('utf-8'), password.decode('utf-8'))
-    if not authenticated:
+    authenticated, role = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+                                                                            password=password.decode('utf-8'))
+    if not authenticated or role != 'admin':
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -138,7 +135,8 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
 
 
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
-async def fetch_children(recent: bool = False, limit: int = 10):
+@starlette.authentication.requires(['admin'])
+async def fetch_children(request: fastapi.Request, recent: bool = False, limit: int = 10):
     """
 
     :return:
@@ -148,7 +146,8 @@ async def fetch_children(recent: bool = False, limit: int = 10):
 
 
 @app.get('/children/{child_id}', response_model=backend.database.schemas.Child)
-async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
+@starlette.authentication.requires(['admin'])
+async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
     """
 
     :return:
@@ -158,7 +157,8 @@ async def fetch_child(child_id: uuid.UUID = fastapi.Path(..., title='ID of the c
 
 
 @app.post('/children', response_model=backend.database.schemas.Child)
-async def fetch_one_child(body: dict):
+@starlette.authentication.requires(['admin'])
+async def fetch_one_child(request: fastapi.Request, body: dict):
     """
 
     :return:
@@ -168,7 +168,8 @@ async def fetch_one_child(body: dict):
 
 
 @app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
-async def create_child(child: backend.database.schemas.ChildBase):
+@starlette.authentication.requires(['admin'])
+async def create_child(request: fastapi.Request, child: backend.database.schemas.ChildBase):
     """
 
     :return:
@@ -181,7 +182,8 @@ async def create_child(child: backend.database.schemas.ChildBase):
 
 
 @app.put('/children/{child_id}/update')
-async def update_child(child_id: uuid.UUID, updates_for_child: backend.database.schemas.ChildUpdate):
+@starlette.authentication.requires(['admin'])
+async def update_child(request: fastapi.Request, child_id: uuid.UUID, updates_for_child: backend.database.schemas.ChildUpdate):
     """
 
     :return:
@@ -192,7 +194,8 @@ async def update_child(child_id: uuid.UUID, updates_for_child: backend.database.
 
 
 @app.delete('/children/{child_id}/delete')
-async def delete_child(child_id: uuid.UUID):
+@starlette.authentication.requires(['admin'])
+async def delete_child(request: fastapi.Request, child_id: uuid.UUID):
     """
 
     :return:
@@ -202,7 +205,9 @@ async def delete_child(child_id: uuid.UUID):
 
 
 @app.post('/children/{child_id}/caretimes')
-async def add_caretime(child_id: uuid.UUID,
+@starlette.authentication.requires(['admin'])
+async def add_caretime(request: fastapi.Request,
+                       child_id: uuid.UUID,
                        ):
     """
 
@@ -212,7 +217,8 @@ async def add_caretime(child_id: uuid.UUID,
 
 
 @app.get('/parents')
-async def fetch_parents(limit: int = 10):
+@starlette.authentication.requires(['admin'])
+async def fetch_parents(request: fastapi.Request, limit: int = 10):
     """
 
     :return:

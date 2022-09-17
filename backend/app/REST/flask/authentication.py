@@ -6,7 +6,7 @@ import flask
 import backend.database.usermanagement
 
 
-def auth_required(role: str) -> typing.Callable:
+def auth_required(required_role: str) -> typing.Callable:
     """
     Decorator factory to require authentication.
 
@@ -28,10 +28,9 @@ def auth_required(role: str) -> typing.Callable:
             """
             username = flask.request.authorization['username']
             password = flask.request.authorization['password']
-            authenticated = backend.database.usermanagement.authenticate_user(user_name=username,
-                                                                              password=password,
-                                                                              role=role)
-            if not authenticated:
+            authenticated, role = backend.database.usermanagement.authenticate_user(user_name=username,
+                                                                                    password=password)
+            if not authenticated or required_role != role:
                 raise flask.abort(flask.Response('Invalid credentials', 401))
             return func(*args, **kwargs)
         return authenticate_user

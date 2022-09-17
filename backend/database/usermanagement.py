@@ -73,21 +73,22 @@ def reset_role(user_name: str, role: str) -> None:
     backend.database.queries.edit_user(user_name=user_name, new_values=new_values)
 
 
-def authenticate_user(user_name: str, password: str, role: str) -> bool:
+def authenticate_user(user_name: str, password: str) -> typing.Tuple[bool, typing.Optional[str]]:
     """
     Authenticate the user using the password and the role.
 
     :param user_name: name of the user to be authenticated
     :param password: submitted password
-    :param role: role the user must have to be authenticated
     :return:  boolean flag, if the user is successfully authenticated or not.
     """
 
     user = backend.database.queries.fetch_user(user_name=user_name)
     if not user:
-        return False
+        return False, None
     salt_b64_enc = bytes(user.salt, 'utf8')
     password_b64_enc = base64.b64encode(bytes(password, 'utf8'))
     pw_hash = hashlib.blake2b(password_b64_enc, salt=salt_b64_enc).hexdigest()
 
-    return secrets.compare_digest(pw_hash, user.hashed_password) and secrets.compare_digest(role, user.role)
+    authenticated = secrets.compare_digest(pw_hash, user.hashed_password)
+    role = user.role if authenticated else None
+    return authenticated, role

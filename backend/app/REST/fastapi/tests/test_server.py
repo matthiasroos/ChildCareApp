@@ -16,7 +16,7 @@ def test_authenticate_all_is_working():
     conn = fastapi.requests.HTTPConnection(scope=scope)
     conn._headers = headers
 
-    basicauthbackend = backend.app.REST.fastapi.server.BasicAuthBackend(role='admin')
+    basicauthbackend = backend.app.REST.fastapi.server.BasicAuthBackend()
 
     credentials, user = asyncio.run(basicauthbackend.authenticate(conn=conn))
 

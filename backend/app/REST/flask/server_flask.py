@@ -14,7 +14,7 @@ PREFIX = '/rest/flask/v2'
 
 
 @app.route(f'{PREFIX}/children', methods=['GET'])
-@auth_required(role='admin')
+@auth_required(required_role='admin')
 def get(recent: bool = False, limit: int = 10):
     result = backend.database.queries.fetch_children(recent=recent, limit=limit)
     result_ = backend.app.REST.utils.serialize_result(result=result)
@@ -27,7 +27,7 @@ def get(recent: bool = False, limit: int = 10):
 
 
 @app.route(f'{PREFIX}/children', methods=['POST'])
-@auth_required(role='admin')
+@auth_required(required_role='admin')
 def post():
     result = backend.database.queries.fetch_child(child_id=flask.request.form['child_id'])
     result_ = backend.app.REST.utils.serialize_result(result=result)
