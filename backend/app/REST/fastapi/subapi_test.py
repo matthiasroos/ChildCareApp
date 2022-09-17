@@ -16,10 +16,9 @@ def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fasta
     """
 
     """
-    authenticated = backend.database.usermanagement.authenticate_user(credentials.username,
-                                                                      credentials.password,
-                                                                      'admin')
-    if not authenticated:
+    authenticated, role = backend.database.usermanagement.authenticate_user(credentials.username,
+                                                                            credentials.password)
+    if not authenticated or role != 'admin':
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
