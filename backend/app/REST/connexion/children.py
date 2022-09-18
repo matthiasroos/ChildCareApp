@@ -38,8 +38,10 @@ def fetch_child(child_id: uuid.UUID):
     :return:
     """
     result = backend.database.queries.fetch_child(child_id=child_id)
-    result_ = backend.app.REST.utils.serialize_result(result=result)
-    return result_ or ('Not found', 404)
+    if result:
+        result_ = backend.app.REST.utils.serialize_result(result=result)
+        return result_
+    return 'Not found', 404
 
 
 def update_child(child_id: uuid.UUID, updates_for_child: typing.Dict):

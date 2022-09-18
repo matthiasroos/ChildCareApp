@@ -8,5 +8,5 @@ app = connexion.App(
     options={'swagger_ui': False}
 )
 
-app.add_api('swagger.yaml')
+app.add_api('openapi.yaml')
 app.run(port=8081)

@@ -1,0 +1,273 @@
+openapi: 3.0.0
+info:
+  title: Child Care API
+  version: '0.2'
+  description: API to store and retrieve children
+servers:
+  - url: /rest/connexion/v2
+paths:
+  /children:
+    get:
+      tags: [Children]
+      operationId: children.fetch_children
+      summary: fetch all children
+      parameters:
+        - name: recent
+          in: query
+          required: false
+          description: flag to show only recent children
+          schema:
+            type: boolean
+            default: true
+
+        - name: limit
+          in: query
+          required: false
+          description: number of children to fetch
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 5
+      responses:
+        '200':
+          description: Return children
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  children:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Child'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Children]
+      operationId: children.create_child
+      summary: create a new child
+      requestBody:
+        description: child to create
+        required: true
+        content:
+          application/json:
+            schema:
+              x-body-name: child
+              $ref: '#/components/schemas/Child'
+      responses:
+        '201':
+          description: New child created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/parameters/child_id'
+
+  /children/{child_id}:
+    get:
+      tags: [Children]
+      operationId: children.fetch_child
+      summary: fetch a child
+      parameters:
+        - $ref: '#/components/parameters/child_id'
+      responses:
+        '200':
+          description: Return child
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Child'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /children/{child_id}/update:
+    put:
+      tags: [Children]
+      operationId: children.update_child
+      summary: edit a child
+      parameters:
+        - $ref: '#/components/parameters/child_id'
+      requestBody:
+        description: update for child
+        required: true
+        content:
+          application/json:
+            schema:
+              x-body-name: updates_for_child
+              type: object
+      responses:
+        '200':
+          description: Child updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /children/{child_id}/delete:
+    delete:
+      tags: [ Children ]
+      operationId: children.delete_child
+      summary: delete a child
+      parameters:
+        - $ref: '#/components/parameters/child_id'
+      responses:
+        '200':
+          description: Child deleted
+        '404':
+          description: Child does not exist
+
+#security:
+#  - OAuth2: [admin]
+#  - basicAuth: []
+
+components:
+  parameters:
+    child_id:
+      name: child_id
+      description: child's unique identifier
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    parent_id:
+      name: parent_id
+      description: Parent's unique identifier
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Child:
+      type: object
+      required:
+        - name
+        - sur_name
+        - birth_day
+      properties:
+        child_id:
+          type: string
+          format: uuid
+          description: unique identifier
+          example: "12345678-1234-5678-1234-567812345678"
+          readOnly: true
+        name:
+          type: string
+          description: child's name
+          example: "Susie"
+          minLength: 1
+          maxLength: 20
+        sur_name:
+          type: string
+          description: Child's surname
+          example: "Meier"
+          minLength: 1
+          maxLength: 20
+        birth_day:
+          type: string
+          format: date
+          description: Birth date
+          example: "2020-01-01"
+        parents:
+          type: array
+          description: IDs of parents
+          items:
+            type: integer
+        start_date:
+          type: string
+          format: date
+          description: Begin of child care
+          example: "2020-01-01"
+        end_date:
+          type: string
+          format: date
+          description: End of child care
+          example: "2020-01-01"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation time
+          example: "2020-01-01T01:05:00.230+02:00"
+          readOnly: true
+
+    Parent:
+      type: object
+      required:
+        - name
+        - telefone
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+          example: "12345678-1234-5678-1234-567812345678"
+          readOnly: true
+        children:
+          type: array
+          description: IDs of children
+          items:
+            type: integer
+        name:
+          type: string
+          description: Complete parent name
+          example: "Gitta Gans"
+          minLength: 1
+          maxLength: 25
+        telefone:
+          type: string
+          description: Parent's telefone number
+          example: "+49 089 999999"
+          pattern: "^/+[0-9]*$"
+        email:
+          type: string
+          description: Parent's email address
+          example: "test@example.com"
+        created:
+          type: string
+          format: date-time
+          description: Creation time
+          example: "2020-01-01T01:05:00.230+02:00"
+          readOnly: true
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: authentication.basic_auth
+    OAuth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: fake authorization url
+          scopes:
+            admin: administrate children
+
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Invalid credentials
+      headers:
+        WWW_Authenticate:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
