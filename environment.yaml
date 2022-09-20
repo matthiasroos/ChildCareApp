@@ -4,16 +4,15 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
-  - kivy
   - flask
-  - flask-restful
   - connexion
   - sqlalchemy
-  - mysqlclient
-  - fastapi
+  - fastapi>=0.85.0,<0.86.0
   - uvicorn
   - python-dotenv
   - psycopg2
   - alembic
   - pytest
+  - pip:
+      - flask_restful>=0.3.9
 prefix: /opt/miniconda3/envs/childcareapp
