@@ -16,11 +16,26 @@ import starlette.types
 import uvicorn
 
 import backend.database.queries
+import backend.database.queries_v2
 import backend.database.schemas
 import backend.database.usermanagement
 
 
-app = fastapi.FastAPI(root_path='/rest/fastapi/v1')
+def get_db(request: fastapi.Request):
+    """
+
+    :return:
+    """
+    db_config = backend.database.queries_v2.get_database_config()
+    db = backend.database.queries_v2.create_session(db_config=db_config)
+    try:
+        request.state.db = db
+        yield db
+    finally:
+        db.close()
+
+
+app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depends(get_db)])
 
 
 class CloneRequestMiddleware:
@@ -105,8 +120,8 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
 
 def on_auth_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
     """function executed on error"""
-    return fastapi.responses.JSONResponse({'error': str(exc)},
-                                          status_code=401,
+    return fastapi.responses.JSONResponse(status_code=401,
+                                          content={'error': str(exc)},
                                           headers={"WWW-Authenticate": "Basic"})
 
 
@@ -134,6 +149,9 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     return response
 
 
+error_404_response = fastapi.responses.JSONResponse(status_code=404, content={'error': 'Item not found'})
+
+
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 @starlette.authentication.requires(['admin'])
 async def fetch_children(request: fastapi.Request, recent: bool = False, limit: int = 10):
@@ -141,7 +159,7 @@ async def fetch_children(request: fastapi.Request, recent: bool = False, limit: 
 
     :return:
     """
-    result = backend.database.queries.fetch_children(recent=recent, limit=limit)
+    result = backend.database.queries_v2.fetch_children(db=request.state.db, recent=recent, limit=limit)
     return result
 
 
@@ -152,8 +170,10 @@ async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Pa
 
     :return:
     """
-    result = backend.database.queries.fetch_child(child_id=child_id)
-    return result
+    result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=child_id)
+    if result:
+        return result
+    return error_404_response
 
 
 @app.post('/children', response_model=backend.database.schemas.Child)
@@ -163,11 +183,13 @@ async def fetch_one_child(request: fastapi.Request, body: dict):
 
     :return:
     """
-    result = backend.database.queries.fetch_child(child_id=body['child_id'])
-    return result
+    result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=body['child_id'])
+    if result:
+        return result
+    return error_404_response
 
 
-@app.post('/children', status_code=fastapi.status.HTTP_201_CREATED)
+@app.post('/children/create', status_code=fastapi.status.HTTP_201_CREATED)
 @starlette.authentication.requires(['admin'])
 async def create_child(request: fastapi.Request, child: backend.database.schemas.ChildBase):
     """
@@ -177,7 +199,7 @@ async def create_child(request: fastapi.Request, child: backend.database.schemas
     child_id = uuid.uuid4()
     child_dict = child.dict()
     child_dict['child_id'] = child_id
-    _ = backend.database.queries.create_child(child=child_dict)
+    _ = backend.database.queries_v2.create_child(db=request.state.db, child=child_dict)
     return child_id
 
 
@@ -189,7 +211,7 @@ async def update_child(request: fastapi.Request, child_id: uuid.UUID, updates_fo
     :return:
     """
     updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
-    _ = backend.database.queries.update_child(child_id=child_id, updates_for_child=updates_dict)
+    _ = backend.database.queries_v2.update_child(db=request.state.db, child_id=child_id, updates_for_child=updates_dict)
     return
 
 
@@ -200,7 +222,7 @@ async def delete_child(request: fastapi.Request, child_id: uuid.UUID):
 
     :return:
     """
-    backend.database.queries.delete_child(child_id=child_id)
+    backend.database.queries_v2.delete_child(db=request.state.db, child_id=child_id)
     return
 
 
