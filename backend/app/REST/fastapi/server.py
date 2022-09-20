@@ -106,7 +106,7 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
         :return:
         """
         if 'Authorization' not in conn.headers:
-            return
+            raise starlette.authentication.AuthenticationError('Invalid credentials')
 
         auth_header = conn.headers['Authorization']
         username, password = base64.b64decode(auth_header.split()[1]).split(b':')
