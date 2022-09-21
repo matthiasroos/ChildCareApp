@@ -169,12 +169,12 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
 
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 @starlette.authentication.requires(['admin'])
-async def fetch_children(request: fastapi.Request, recent: bool = False, limit: int = 10):
+async def fetch_children(request: fastapi.Request, recent: bool = False, skip: int = 0, limit: int = 10):
     """
 
     :return:
     """
-    result = backend.database.queries_v2.fetch_children(db=request.state.db, recent=recent, limit=limit)
+    result = backend.database.queries_v2.fetch_children(db=request.state.db, recent=recent, skip=skip, limit=limit)
     return result
 
 
