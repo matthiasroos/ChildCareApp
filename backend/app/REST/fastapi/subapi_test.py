@@ -1,8 +1,9 @@
 import fastapi
 import fastapi.security
+import sqlalchemy.orm
 import uvicorn
 
-
+import backend.database.queries_v2
 import backend.database.usermanagement
 
 PATH = '/test'
@@ -12,12 +13,28 @@ app = fastapi.FastAPI()
 security = fastapi.security.HTTPBasic()
 
 
-def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fastapi.Depends(security)):
+def get_db(request: fastapi.Request):
+    """
+
+    :return:
+    """
+    db_config = backend.database.queries_v2.get_database_config()
+    db = backend.database.queries_v2.create_session(db_config=db_config)
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def check_credentials(credentials: fastapi.security.HTTPBasicCredentials = fastapi.Depends(security),
+                      db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     """
-    authenticated, role = backend.database.usermanagement.authenticate_user(credentials.username,
-                                                                            credentials.password)
+
+    authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
+                                                                            user_name=credentials.username,
+                                                                            password=credentials.password)
     if not authenticated or role != 'admin':
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
@@ -31,8 +48,9 @@ subapi_children = fastapi.FastAPI(dependencies=[fastapi.Depends(check_credential
 
 
 @subapi_children.get('/')
-async def fetch_children():
-    return {'message': 'list of children '}
+async def fetch_children(request: fastapi.Request, db=fastapi.Depends(get_db)):
+    result = backend.database.queries_v2.fetch_children(db=db)
+    return result
 
 
 subapi_parents = fastapi.FastAPI()

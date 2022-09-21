@@ -9,6 +9,7 @@ import fastapi.requests
 import fastapi.responses
 import fastapi.security
 import requests
+import sqlalchemy.orm
 import starlette.authentication
 import starlette.middleware.authentication
 import starlette.requests
@@ -21,7 +22,7 @@ import backend.database.schemas
 import backend.database.usermanagement
 
 
-def get_db(request: fastapi.Request):
+def get_db():
     """
 
     :return:
@@ -29,7 +30,6 @@ def get_db(request: fastapi.Request):
     db_config = backend.database.queries_v2.get_database_config()
     db = backend.database.queries_v2.create_session(db_config=db_config)
     try:
-        request.state.db = db
         yield db
     finally:
         db.close()
@@ -127,9 +127,13 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
         if 'Authorization' not in conn.headers:
             raise starlette.authentication.AuthenticationError('Invalid credentials')
 
+        db_config = backend.database.queries_v2.get_database_config()
+        db = backend.database.queries_v2.create_session(db_config=db_config)
         auth_header = conn.headers['Authorization']
         username, password = base64.b64decode(auth_header.split()[1]).split(b':')
-        authenticated, role = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+
+        authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
+                                                                                user_name=username.decode('utf-8'),
                                                                                 password=password.decode('utf-8'))
         if not authenticated:
             raise starlette.authentication.AuthenticationError('Invalid credentials')
@@ -154,8 +158,11 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
 
     :return:
     """
+    db_config = backend.database.queries_v2.get_database_config()
+    db = backend.database.queries_v2.create_session(db_config=db_config)
     username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
-    authenticated, role = backend.database.usermanagement.authenticate_user(user_name=username.decode('utf-8'),
+    authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
+                                                                            user_name=username.decode('utf-8'),
                                                                             password=password.decode('utf-8'))
     if not authenticated or role != 'admin':
         raise fastapi.HTTPException(
@@ -169,23 +176,25 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
 
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 @starlette.authentication.requires(['admin'])
-async def fetch_children(request: fastapi.Request, recent: bool = False, skip: int = 0, limit: int = 10):
+async def fetch_children(request: fastapi.Request, recent: bool = False, skip: int = 0, limit: int = 10,
+                         db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
-    result = backend.database.queries_v2.fetch_children(db=request.state.db, recent=recent, skip=skip, limit=limit)
+    result = backend.database.queries_v2.fetch_children(db=db, recent=recent, skip=skip, limit=limit)
     return result
 
 
 @app.get('/children/{child_id}', response_model=backend.database.schemas.Child)
 @starlette.authentication.requires(['admin'])
-async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get')):
+async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
+                      db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
-    result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=child_id)
+    result = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
     if result:
         return result
     raise fastapi.HTTPException(status_code=404)
@@ -193,12 +202,12 @@ async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Pa
 
 @app.post('/children', response_model=backend.database.schemas.Child)
 @starlette.authentication.requires(['admin'])
-async def fetch_one_child(request: fastapi.Request, body: dict):
+async def fetch_one_child(request: fastapi.Request, body: dict, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
-    result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=body['child_id'])
+    result = backend.database.queries_v2.fetch_child(db=db, child_id=body['child_id'])
     if result:
         return result
     raise fastapi.HTTPException(status_code=404)
@@ -206,7 +215,8 @@ async def fetch_one_child(request: fastapi.Request, body: dict):
 
 @app.post('/children/create', status_code=fastapi.status.HTTP_201_CREATED)
 @starlette.authentication.requires(['admin'])
-async def create_child(request: fastapi.Request, child: backend.database.schemas.ChildBase):
+async def create_child(request: fastapi.Request, child: backend.database.schemas.ChildBase,
+                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
@@ -214,30 +224,34 @@ async def create_child(request: fastapi.Request, child: backend.database.schemas
     child_id = uuid.uuid4()
     child_dict = child.dict()
     child_dict['child_id'] = child_id
-    _ = backend.database.queries_v2.create_child(db=request.state.db, child=child_dict)
+    _ = backend.database.queries_v2.create_child(db=db, child=child_dict)
     return child_id
 
 
 @app.put('/children/{child_id}/update')
 @starlette.authentication.requires(['admin'])
-async def update_child(request: fastapi.Request, child_id: uuid.UUID, updates_for_child: backend.database.schemas.ChildUpdate):
+async def update_child(request: fastapi.Request, child_id: uuid.UUID,
+                       updates_for_child: backend.database.schemas.ChildUpdate,
+                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
     updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
-    _ = backend.database.queries_v2.update_child(db=request.state.db, child_id=child_id, updates_for_child=updates_dict)
+    _ = backend.database.queries_v2.update_child(db=db, child_id=child_id, updates_for_child=updates_dict)
     return
 
 
 @app.delete('/children/{child_id}/delete')
 @starlette.authentication.requires(['admin'])
-async def delete_child(request: fastapi.Request, child_id: uuid.UUID):
+async def delete_child(request: fastapi.Request,
+                       child_id: uuid.UUID,
+                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
-    backend.database.queries_v2.delete_child(db=request.state.db, child_id=child_id)
+    backend.database.queries_v2.delete_child(db=db, child_id=child_id)
     return
 
 
@@ -255,7 +269,9 @@ async def add_caretime(request: fastapi.Request,
 
 @app.get('/parents')
 @starlette.authentication.requires(['admin'])
-async def fetch_parents(request: fastapi.Request, limit: int = 10):
+async def fetch_parents(request: fastapi.Request,
+                        limit: int = 10,
+                        db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:

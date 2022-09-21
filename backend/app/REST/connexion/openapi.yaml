@@ -115,9 +115,9 @@ paths:
         '404':
           description: Child does not exist
 
-#security:
+security:
 #  - OAuth2: [admin]
-#  - basicAuth: []
+  - basicAuth: []
 
 components:
   parameters:
