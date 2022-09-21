@@ -35,7 +35,26 @@ def get_db(request: fastapi.Request):
         db.close()
 
 
-app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depends(get_db)])
+async def forbidden(request: fastapi.Request, exc: fastapi.HTTPException):
+    return fastapi.responses.JSONResponse(status_code=403, content={'error': 'Permission denied'})
+
+
+async def not_found(request: fastapi.Request, exc: fastapi.HTTPException):
+    return fastapi.responses.JSONResponse(status_code=404, content={'error': 'Item not found'})
+
+
+async def server_error(request: fastapi.Request, exc: fastapi.HTTPException):
+    return fastapi.responses.JSONResponse(status_code=500, content={'error': 'Server error'})
+
+
+exception_handlers = {
+    403: forbidden,
+    404: not_found,
+    500: server_error,
+}
+
+app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depends(get_db)],
+                      exception_handlers=exception_handlers)
 
 
 class CloneRequestMiddleware:
@@ -120,8 +139,7 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
 
 def on_auth_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fastapi.Response:
     """function executed on error"""
-    return fastapi.responses.JSONResponse(status_code=401,
-                                          content={'error': str(exc)},
+    return fastapi.responses.JSONResponse(status_code=401, content={'error': 'Not authorized'},
                                           headers={"WWW-Authenticate": "Basic"})
 
 
@@ -149,9 +167,6 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     return response
 
 
-error_404_response = fastapi.responses.JSONResponse(status_code=404, content={'error': 'Item not found'})
-
-
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 @starlette.authentication.requires(['admin'])
 async def fetch_children(request: fastapi.Request, recent: bool = False, limit: int = 10):
@@ -173,7 +188,7 @@ async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Pa
     result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=child_id)
     if result:
         return result
-    return error_404_response
+    raise fastapi.HTTPException(status_code=404)
 
 
 @app.post('/children', response_model=backend.database.schemas.Child)
@@ -186,7 +201,7 @@ async def fetch_one_child(request: fastapi.Request, body: dict):
     result = backend.database.queries_v2.fetch_child(db=request.state.db, child_id=body['child_id'])
     if result:
         return result
-    return error_404_response
+    raise fastapi.HTTPException(status_code=404)
 
 
 @app.post('/children/create', status_code=fastapi.status.HTTP_201_CREATED)
