@@ -73,28 +73,25 @@ class CloneRequestMiddleware:
         if scope['type'] != 'http':
             return await self.app(scope, receive, send)
 
-        messages = []
-        more_body = True
-        while more_body:
-            message = await receive()
-            messages.append(message)
-            more_body = message.get('more_body', False)
+        kw_args = {'method': scope['method'],
+                   'params': scope['query_string'],
+                   'headers': dict(scope['headers'])}
+        if scope['method'] in ('POST', 'PUT', ):
+            messages = []
+            more_body = True
+            while more_body:
+                message = await receive()
+                messages.append(message)
+                more_body = message.get('more_body', False)
 
-        body = b''.join([message.get('body', b'') for message in messages])
+            body = b''.join([message.get('body', b'') for message in messages])
+            kw_args.update({'data': body})
 
-        request = fastapi.requests.Request(scope)
         for server in self.servers:
-            if request.method == 'GET':
-                thread = threading.Thread(target=getattr(requests, request.method.lower()),
-                                          kwargs={'url': f'{server}{scope["path"]}',
-                                                  'headers': dict(scope['headers'])})
-                thread.start()
-            elif request.method == 'POST':
-                thread = threading.Thread(target=getattr(requests, request.method.lower()),
-                                          kwargs={'url': f'{server}{scope["path"]}',
-                                                  'headers': dict(scope['headers']),
-                                                  'data': body})
-                thread.start()
+            kw_args.update({'url': f'http://{server}{scope["path"]}'})
+            thread = threading.Thread(target=requests.request, kwargs=kw_args)
+
+            thread.start()
 
         # Dispatch to the ASGI callable
         async def wrapped_receive():
@@ -108,7 +105,7 @@ class CloneRequestMiddleware:
         await self.app(scope, wrapped_receive, send)
 
 
-app.add_middleware(CloneRequestMiddleware, servers=['http://localhost:8000/rest/flask/v2', ])
+# app.add_middleware(CloneRequestMiddleware, servers=['http://localhost:8000/rest/flask/v2', ])
 
 
 class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
@@ -129,6 +126,7 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
 
         db_config = backend.database.queries_v2.get_database_config()
         db = backend.database.queries_v2.create_session(db_config=db_config)
+
         auth_header = conn.headers['Authorization']
         username, password = base64.b64decode(auth_header.split()[1]).split(b':')
 
@@ -239,6 +237,7 @@ async def update_child(request: fastapi.Request, child_id: uuid.UUID,
     """
     updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
     _ = backend.database.queries_v2.update_child(db=db, child_id=child_id, updates_for_child=updates_dict)
+    # TODO: error handling
     return
 
 
@@ -252,6 +251,7 @@ async def delete_child(request: fastapi.Request,
     :return:
     """
     backend.database.queries_v2.delete_child(db=db, child_id=child_id)
+    # TODO: error handling
     return
 
 
@@ -259,12 +259,45 @@ async def delete_child(request: fastapi.Request,
 @starlette.authentication.requires(['admin'])
 async def add_caretime(request: fastapi.Request,
                        child_id: uuid.UUID,
+                       start_time: datetime.datetime,
+                       stop_time: typing.Optional[datetime.datetime],
+                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
                        ):
     """
 
     :return:
     """
-    return None
+    caretime_id = uuid.uuid4()
+    caretime_entry = dict()
+    caretime_entry['caretime_id'] = caretime_id
+    caretime_entry['child_id'] = child_id
+    caretime_entry['start_time'] = start_time
+    if stop_time:
+        caretime_entry['stop_time'] = stop_time
+    backend.database.queries_v2.create_caretime(db=db, caretime_entry=caretime_entry)
+
+    return caretime_id
+
+
+@app.post('/children/{child_id}/caretimes/{caretime_id}')
+@starlette.authentication.requires(['admin'])
+async def edit_caretime(request: fastapi.Request,
+                        child_id: uuid.UUID,
+                        caretime_id: uuid.UUID,
+                        start_time: typing.Optional[datetime.datetime],
+                        stop_time: typing.Optional[datetime.datetime],
+                        db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    """
+
+    :return:
+    """
+    caretime_entry = dict()
+    caretime_entry['caretime_id'] = caretime_id
+    caretime_entry['child_id'] = child_id
+    if start_time:
+        caretime_entry['start_time'] = start_time
+    if stop_time:
+        caretime_entry['stop_time'] = stop_time
 
 
 @app.get('/parents')
