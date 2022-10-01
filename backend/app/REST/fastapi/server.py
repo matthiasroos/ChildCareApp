@@ -235,9 +235,11 @@ async def update_child(request: fastapi.Request, child_id: uuid.UUID,
 
     :return:
     """
+    child = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
+    if not child:
+        raise fastapi.HTTPException(status_code=404)
     updates_dict = {key: values for key, values in updates_for_child.dict().items() if values is not None}
     _ = backend.database.queries_v2.update_child(db=db, child_id=child_id, updates_for_child=updates_dict)
-    # TODO: error handling
     return
 
 
@@ -250,8 +252,10 @@ async def delete_child(request: fastapi.Request,
 
     :return:
     """
+    child = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
+    if not child:
+        raise fastapi.HTTPException(status_code=404)
     backend.database.queries_v2.delete_child(db=db, child_id=child_id)
-    # TODO: error handling
     return
 
 
@@ -352,8 +356,11 @@ async def delete_caretime(request: fastapi.Request,
 
     :return:
     """
+    child = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
+    caretime = backend.database.queries_v2.fetch_single_caretime(db=db, child_id=child_id, caretime_id=caretime_id)
+    if not child or not caretime:
+        raise fastapi.HTTPException(status_code=404)
     backend.database.queries_v2.delete_caretime(db=db, child_id=child_id, caretime_id=caretime_id)
-    # TODO: error handling
     return
 
 
