@@ -41,13 +41,13 @@ class ChildUpdate(pydantic.BaseModel):
 
 
 class CaretimeBase(pydantic.BaseModel):
-    caretime_id: uuid.UUID
-    child_id: uuid.UUID
-    start_time: typing.Optional[datetime.datetime]
-    stop_time: typing.Optional[datetime.datetime]
+    start_time: typing.Optional[datetime.datetime] = pydantic.Field(None)
+    stop_time: typing.Optional[datetime.datetime] = pydantic.Field(None)
 
 
 class Caretime(CaretimeBase):
+    caretime_id: uuid.UUID
+    child_id: uuid.UUID
     created_at: datetime.datetime
     modified_at: datetime.datetime
 

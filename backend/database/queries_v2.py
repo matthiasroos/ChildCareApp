@@ -152,6 +152,39 @@ def delete_child(db: sqlalchemy.orm.Session, child_id: uuid.UUID):
     return
 
 
+def fetch_caretimes(db: sqlalchemy.orm.Session, child_id: uuid.UUID, skip: int = 0, limit: int = 10):
+    """
+
+    :param db:
+    :param child_id:
+    :param skip:
+    :param limit:
+    :return:
+    """
+    caretime_model = backend.database.models.Caretime
+    return db.execute(
+        sqlalchemy.sql.select(
+            from_obj=caretime_model,
+            columns=caretime_model.__table__.columns).
+        where(caretime_model.child_id == child_id).offset(skip).limit(limit)).all()
+
+
+def fetch_single_caretime(db: sqlalchemy.orm.Session, caretime_id: uuid.UUID, child_id: uuid.UUID):
+    """
+
+    :param db:
+    :param caretime_id:
+    :param child_id:
+    :return:
+    """
+    caretime_model = backend.database.models.Caretime
+    return db.execute(
+        sqlalchemy.sql.select(
+            from_obj=caretime_model,
+            columns=caretime_model.__table__.columns).
+        where(caretime_model.child_id == child_id, caretime_model.caretime_id == caretime_id)).first()
+
+
 def create_caretime(db: sqlalchemy.orm.Session, caretime_entry: dict):
     """
 
@@ -172,7 +205,30 @@ def edit_caretime(db: sqlalchemy.orm.Session, caretime_entry: dict):
     :return:
     """
     caretime_model = backend.database.models.Caretime
-    db.execute(sqlalchemy.update(caretime_model).
-               where(caretime_model.caretime_id == caretime_entry['caretime_id']).
-               values(**caretime_entry))
+    db.execute(
+        sqlalchemy.update(caretime_model).
+        where(caretime_model.child_id == caretime_entry['child_id'],
+              caretime_model.caretime_id == caretime_entry['caretime_id'],
+              ).
+        values(**caretime_entry))
     db.commit()
+    return
+
+
+def delete_caretime(db: sqlalchemy.orm.Session, caretime_id: uuid.UUID, child_id: uuid.UUID):
+    """
+
+    :param db:
+    :param caretime_id:
+    :param child_id:
+    :return:
+    """
+    caretime_model = backend.database.models.Caretime
+    db.execute(sqlalchemy.delete(
+        caretime_model).
+               where(
+        caretime_model.caretime_id == caretime_id,
+        caretime_model.child_id == child_id,
+    ))
+    db.commit()
+    return

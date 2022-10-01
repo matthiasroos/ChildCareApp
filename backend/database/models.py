@@ -48,4 +48,4 @@ class Caretime(Base):
     start_time = sqlalchemy.Column(sqlalchemy.DateTime)
     stop_time = sqlalchemy.Column(sqlalchemy.DateTime)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
-    modified_at = sqlalchemy.Column(sqlalchemy.DateTime)
+    modified_at = sqlalchemy.Column(sqlalchemy.DateTime, onupdate=sqlalchemy.func.now())

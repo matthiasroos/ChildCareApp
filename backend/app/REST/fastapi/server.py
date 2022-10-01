@@ -255,25 +255,61 @@ async def delete_child(request: fastapi.Request,
     return
 
 
-@app.post('/children/{child_id}/caretimes')
+@app.get('/children/{child_id}/caretimes', response_model=typing.List[backend.database.schemas.Caretime])
+@starlette.authentication.requires(['admin'])
+async def fetch_caretimes(request: fastapi.Request,
+                          child_id: uuid.UUID,
+                          skip: int = 0,
+                          limit: int = 10,
+                          db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+                          ):
+    """
+
+    :return:
+    """
+    result = backend.database.queries_v2.fetch_caretimes(db=db, child_id=child_id, skip=skip, limit=limit)
+    return result
+
+
+@app.get('/children/{child_id}/caretimes/{caretime_id}', response_model=backend.database.schemas.Caretime)
+@starlette.authentication.requires(['admin'])
+async def fetch_single_caretime(request: fastapi.Request,
+                                child_id: uuid.UUID,
+                                caretime_id: uuid.UUID,
+                                db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+                                ):
+    """
+
+    :return:
+    """
+    result = backend.database.queries_v2.fetch_single_caretime(db=db, child_id=child_id, caretime_id=caretime_id)
+    if result:
+        return result
+    raise fastapi.HTTPException(status_code=404)
+
+
+@app.post('/children/{child_id}/caretimes', status_code=fastapi.status.HTTP_201_CREATED)
 @starlette.authentication.requires(['admin'])
 async def add_caretime(request: fastapi.Request,
                        child_id: uuid.UUID,
-                       start_time: datetime.datetime,
-                       stop_time: typing.Optional[datetime.datetime],
+                       time_interval: backend.database.schemas.CaretimeBase,
                        db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
                        ):
     """
 
     :return:
     """
+    child = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
+    if not child:
+        raise fastapi.HTTPException(status_code=404)
+
     caretime_id = uuid.uuid4()
     caretime_entry = dict()
     caretime_entry['caretime_id'] = caretime_id
     caretime_entry['child_id'] = child_id
-    caretime_entry['start_time'] = start_time
-    if stop_time:
-        caretime_entry['stop_time'] = stop_time
+    caretime_entry['start_time'] = time_interval.start_time
+    if time_interval.stop_time:
+        caretime_entry['stop_time'] = time_interval.stop_time
     backend.database.queries_v2.create_caretime(db=db, caretime_entry=caretime_entry)
 
     return caretime_id
@@ -284,20 +320,41 @@ async def add_caretime(request: fastapi.Request,
 async def edit_caretime(request: fastapi.Request,
                         child_id: uuid.UUID,
                         caretime_id: uuid.UUID,
-                        start_time: typing.Optional[datetime.datetime],
-                        stop_time: typing.Optional[datetime.datetime],
+                        time_interval: backend.database.schemas.CaretimeBase,
                         db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
     """
 
     :return:
     """
+    child = backend.database.queries_v2.fetch_child(db=db, child_id=child_id)
+    caretime = backend.database.queries_v2.fetch_single_caretime(db=db, child_id=child_id, caretime_id=caretime_id)
+    if not child or not caretime:
+        raise fastapi.HTTPException(status_code=404)
+
     caretime_entry = dict()
     caretime_entry['caretime_id'] = caretime_id
     caretime_entry['child_id'] = child_id
-    if start_time:
-        caretime_entry['start_time'] = start_time
-    if stop_time:
-        caretime_entry['stop_time'] = stop_time
+    if time_interval.start_time:
+        caretime_entry['start_time'] = time_interval.start_time
+    if time_interval.stop_time:
+        caretime_entry['stop_time'] = time_interval.stop_time
+
+    backend.database.queries_v2.edit_caretime(db=db, caretime_entry=caretime_entry)
+
+
+@app.delete('/children/{child_id}/caretimes/{caretime_id}')
+@starlette.authentication.requires(['admin'])
+async def delete_caretime(request: fastapi.Request,
+                          child_id: uuid.UUID,
+                          caretime_id: uuid.UUID,
+                          db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+    """
+
+    :return:
+    """
+    backend.database.queries_v2.delete_caretime(db=db, child_id=child_id, caretime_id=caretime_id)
+    # TODO: error handling
+    return
 
 
 @app.get('/parents')
