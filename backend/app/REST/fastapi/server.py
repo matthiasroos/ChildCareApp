@@ -62,7 +62,8 @@ app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
                    on_error=backend.app.REST.fastapi.middleware.on_auth_error)
 
 
-#@app.middleware('http')
+# This alternative authentication middleware is not in use
+# @app.middleware('http')
 async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
     """
 
