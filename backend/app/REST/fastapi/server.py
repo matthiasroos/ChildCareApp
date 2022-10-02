@@ -62,27 +62,7 @@ app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
                    on_error=backend.app.REST.fastapi.middleware.on_auth_error)
 
 
-# This alternative authentication middleware is not in use
-# @app.middleware('http')
-async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
-    """
-
-    :return:
-    """
-    db_config = backend.database.queries_v2.get_database_config()
-    db = backend.database.queries_v2.create_session(db_config=db_config)
-    username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
-    authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
-                                                                            user_name=username.decode('utf-8'),
-                                                                            password=password.decode('utf-8'))
-    if not authenticated or role != 'admin':
-        raise fastapi.HTTPException(
-            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    response = await call_next(request)
-    return response
+# app.middleware('http')(backend.app.REST.fastapi.middleware.authenticate_user)
 
 
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])

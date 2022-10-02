@@ -93,3 +93,28 @@ def on_auth_error(conn: fastapi.requests.HTTPConnection, exc: Exception) -> fast
     """function executed on error"""
     return fastapi.responses.JSONResponse(status_code=401, content={'error': 'Not authorized'},
                                           headers={"WWW-Authenticate": "Basic"})
+
+
+# This alternative authentication middleware is not in use
+#  It can be used via:
+# @app.middleware('http')(authenticate_user)
+#
+async def authenticate_user(request: fastapi.Request, call_next: typing.Callable):
+    """
+
+    :return:
+    """
+    db_config = backend.database.queries_v2.get_database_config()
+    db = backend.database.queries_v2.create_session(db_config=db_config)
+    username, password = base64.b64decode(request.headers.get('authorization').split()[1]).split(b':')
+    authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
+                                                                            user_name=username.decode('utf-8'),
+                                                                            password=password.decode('utf-8'))
+    if not authenticated or role != 'admin':
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    response = await call_next(request)
+    return response
