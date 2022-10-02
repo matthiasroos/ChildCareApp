@@ -6,6 +6,7 @@ import starlette.status
 import starlite
 import uvicorn
 
+import backend.app.REST.starlite.middleware
 import backend.app.REST.utils
 import backend.database.queries_v2
 import backend.database.schemas
@@ -65,7 +66,8 @@ class ChildrenController(starlite.Controller):
 
 
 app = starlite.Starlite(route_handlers=[ChildrenController],
-                        dependencies={'db': starlite.Provide(get_db)})
+                        dependencies={'db': starlite.Provide(get_db)},
+                        middleware=[backend.app.REST.starlite.middleware.BasicAuthMiddleware])
 
 
 if __name__ == "__main__":
