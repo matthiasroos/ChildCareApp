@@ -13,6 +13,7 @@ dependencies:
   - psycopg2
   - alembic
   - pytest
+  - starlite
   - pip:
       - flask_restful>=0.3.9
 prefix: /opt/miniconda3/envs/childcareapp
