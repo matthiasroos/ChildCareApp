@@ -110,11 +110,12 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                             user_name=username.decode('utf-8'),
                                                                             password=password.decode('utf-8'))
-    if not authenticated or role != 'admin':
+    if not authenticated:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Basic"},
         )
+    request.scope['auth'] = starlette.authentication.AuthCredentials([role])
     response = await call_next(request)
     return response
