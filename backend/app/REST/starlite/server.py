@@ -4,22 +4,13 @@ import uuid
 import sqlalchemy.orm
 import starlette.status
 import starlite
+import starlite.plugins.sql_alchemy
 import uvicorn
 
 import backend.app.REST.starlite.middleware
 import backend.app.REST.utils
 import backend.database.queries_v2
 import backend.database.schemas
-
-
-def get_db() -> sqlalchemy.orm.Session:
-    """
-
-    :return:
-    """
-    db_config = backend.database.queries_v2.get_database_config()
-    db = backend.database.queries_v2.create_session(db_config=db_config)
-    return db
 
 
 class ChildrenController(starlite.Controller):
@@ -66,7 +57,19 @@ class ChildrenController(starlite.Controller):
 
 
 app = starlite.Starlite(route_handlers=[ChildrenController],
-                        dependencies={'db': starlite.Provide(get_db)},
+                        plugins=[
+                            starlite.plugins.sql_alchemy.SQLAlchemyPlugin(
+                                config=starlite.plugins.sql_alchemy.SQLAlchemyConfig(
+                                    engine_instance=backend.database.queries_v2.create_engine(
+                                        backend.database.queries_v2.create_connection_string(
+                                            backend.database.queries_v2.get_database_config()
+                                        )
+                                    ),
+                                    use_async_engine=False,
+                                    dependency_key='db'
+                                )
+                            )
+                        ],
                         middleware=[backend.app.REST.starlite.middleware.BasicAuthMiddleware])
 
 

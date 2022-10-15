@@ -23,14 +23,32 @@ def get_database_config():
     return db_user, db_password, db_host, db_schema
 
 
-def create_session(db_config: typing.Tuple[str, str, str, str]) -> sqlalchemy.orm.Session:
+def create_connection_string(db_config: typing.Tuple[str, str, str, str]) -> str:
     """
 
     :return:
     """
     db_user, db_password, db_host, db_schema = db_config
-    engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}',
+    connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}'
+    return connection_string
+
+
+def create_engine(connection_string: str) -> sqlalchemy.engine.Engine:
+    """
+
+    :return:
+    """
+    engine = sqlalchemy.create_engine(connection_string,
                                       poolclass=sqlalchemy.pool.NullPool)
+    return engine
+
+
+def create_session(db_config: typing.Tuple[str, str, str, str]) -> sqlalchemy.orm.Session:
+    """
+
+    :return:
+    """
+    engine = create_engine(create_connection_string(db_config=db_config))
     session = sqlalchemy.orm.Session(autocommit=False, autoflush=False, bind=engine)
 
     return session
