@@ -23,6 +23,9 @@ class BasicAuthMiddleware(starlite.AbstractAuthenticationMiddleware):
         authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                                 user_name=username.decode('utf-8'),
                                                                                 password=password.decode('utf-8'))
+
+        db.close()
+
         if not authenticated:
             raise starlite.HTTPException(
                 status_code=starlette.status.HTTP_401_UNAUTHORIZED,

@@ -14,6 +14,9 @@ def basic_auth(username: str, password: str, required_scopes=None):
     authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                             user_name=username,
                                                                             password=password)
+
+    db.close()
+
     if not authenticated:
         return None
     return {'sub': username}

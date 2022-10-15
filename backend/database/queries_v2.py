@@ -5,6 +5,7 @@ import uuid
 import dotenv
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.pool
 
 import backend.database.models
 
@@ -22,13 +23,14 @@ def get_database_config():
     return db_user, db_password, db_host, db_schema
 
 
-def create_session(db_config: typing.Tuple[str, str, str, str]):
+def create_session(db_config: typing.Tuple[str, str, str, str]) -> sqlalchemy.orm.Session:
     """
 
     :return:
     """
     db_user, db_password, db_host, db_schema = db_config
-    engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}')
+    engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}',
+                                      poolclass=sqlalchemy.pool.NullPool)
     session = sqlalchemy.orm.Session(autocommit=False, autoflush=False, bind=engine)
 
     return session

@@ -83,6 +83,9 @@ class BasicAuthBackend(starlette.authentication.AuthenticationBackend):
         authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                                 user_name=username.decode('utf-8'),
                                                                                 password=password.decode('utf-8'))
+
+        db.close()
+
         if not authenticated:
             raise starlette.authentication.AuthenticationError('Invalid credentials')
         return starlette.authentication.AuthCredentials([role]), \
@@ -110,6 +113,9 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                             user_name=username.decode('utf-8'),
                                                                             password=password.decode('utf-8'))
+
+    db.close()
+
     if not authenticated:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,

@@ -33,6 +33,7 @@ def auth_required(required_role: str) -> typing.Callable:
             authenticated, role = backend.database.usermanagement.authenticate_user(db=db,
                                                                                     user_name=username,
                                                                                     password=password)
+            db.close()
             if not authenticated or required_role != role:
                 raise flask.abort(flask.Response('Invalid credentials', 401))
             return func(*args, **kwargs)
