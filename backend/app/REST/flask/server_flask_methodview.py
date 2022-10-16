@@ -2,7 +2,7 @@ import json
 
 import flask.views
 
-import backend.app.REST.utils
+import backend.app.REST.utils.json_handling
 import backend.database.queries
 import backend.database.schemas
 from backend.app.REST.flask.authentication import auth_required
@@ -18,7 +18,7 @@ class Children(flask.views.MethodView):
 
     def get(self, recent: bool = False, limit: int = 10):
         result = backend.database.queries.fetch_children(recent=recent, limit=limit)
-        result_ = backend.app.REST.utils.serialize_result(result=result)
+        result_ = backend.app.REST.utils.json_handling.serialize_result(result=result)
         response = app.response_class(
             response=json.dumps(result_),
             status=200,

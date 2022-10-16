@@ -3,7 +3,7 @@ import uuid
 
 import connexion
 
-import backend.app.REST.utils
+import backend.app.REST.utils.json_handling
 import backend.database.queries
 import backend.database.schemas
 
@@ -14,7 +14,7 @@ def fetch_children(recent: bool, limit: int):
     :return:
     """
     result = backend.database.queries.fetch_children(recent=recent, limit=limit)
-    result_ = backend.app.REST.utils.serialize_result(result=result)
+    result_ = backend.app.REST.utils.json_handling.serialize_result(result=result)
     return result_, 200
 
 
@@ -39,7 +39,7 @@ def fetch_child(child_id: uuid.UUID):
     """
     result = backend.database.queries.fetch_child(child_id=child_id)
     if result:
-        result_ = backend.app.REST.utils.serialize_result(result=result)
+        result_ = backend.app.REST.utils.json_handling.serialize_result(result=result)
         return result_
     return 'Not found', 404
 
