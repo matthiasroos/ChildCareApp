@@ -84,8 +84,9 @@ class ChildrenController(starlite.Controller):
 app = starlite.Starlite(route_handlers=[ChildrenController],
                         plugins=[starlite.plugins.sql_alchemy.SQLAlchemyPlugin(
                             config=starlite.plugins.sql_alchemy.SQLAlchemyConfig(
-                                connection_string=backend.database.queries_v2.create_connection_string(
-                                    db_config=backend.database.queries_v2.get_database_config()),
+                                engine_instance=backend.database.queries_v2.create_engine(
+                                    url=backend.database.queries_v2.create_url(
+                                        db_config=backend.database.queries_v2.get_database_config())),
                                 use_async_engine=False,
                                 dependency_key='db')
                         )],

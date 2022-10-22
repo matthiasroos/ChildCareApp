@@ -1,3 +1,6 @@
+import datetime
+
+import pydantic_factories
 import starlite.plugins.sql_alchemy
 import starlite.testing
 
@@ -11,26 +14,29 @@ class TestingStarliteServer(backend.app.REST.utils.testing.TestingServer):
     def setUp(self):
         super().setUp()
 
-        app = backend.app.REST.starlite.server.app
+        self.app = backend.app.REST.starlite.server.app
 
-        db_user, db_password, db_host, _ = backend.database.queries_v2.get_database_config()
-        app.plugins = [starlite.plugins.sql_alchemy.SQLAlchemyPlugin(
+        db_config = backend.database.queries_v2.get_database_config()
+        db_config['database'] = self.test_db_name
+        self.app.plugins = [starlite.plugins.sql_alchemy.SQLAlchemyPlugin(
             config=starlite.plugins.sql_alchemy.SQLAlchemyConfig(
-                connection_string=backend.database.queries_v2.create_connection_string(
-                    db_config=(db_user, db_password, db_host, self.test_db_name)),
+                engine_instance=backend.database.queries_v2.create_engine(
+                    url=backend.database.queries_v2.create_url(
+                        db_config=db_config)),
                 use_async_engine=False,
                 dependency_key='db')
         )]
-
-        self.client = starlite.testing.TestClient(app=app)
+        self.app.plugins[0].on_app_init(app=self.app)
+        self.client = starlite.testing.TestClient(app=self.app)
 
     def tearDown(self) -> None:
         self.client = None
 
     def test_fetch_children(self):
-        db_user, db_password, db_host, _ = backend.database.queries_v2.get_database_config()
+        db_config = backend.database.queries_v2.get_database_config()
+        db_config['database'] = self.test_db_name
         self.monkeypatch.setattr('backend.database.queries_v2.get_database_config',
-                                 lambda **kwargs: (db_user, db_password, db_host, self.test_db_name)
+                                 lambda **kwargs: db_config
                                  )
         response = self.client.get('/rest/starlite/v1/children',
                                    auth=(self.user, self.password))

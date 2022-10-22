@@ -7,13 +7,14 @@ dependencies:
   - flask
   - connexion
   - sqlalchemy
-  - fastapi>=0.85.0,<0.86.0
+  #- fastapi>=0.85.0,<0.86.0
   - uvicorn
   - python-dotenv
   - psycopg2
   - alembic
   - pytest
   - starlite
+  - httpx
   - pip
   - pip:
       - flask_restful>=0.3.9

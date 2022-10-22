@@ -25,11 +25,9 @@ def provide_cursor(func: typing.Callable) -> typing.Callable:
     """decorator to provide a cursor"""
     @functools.wraps(func)
     def wrapper(**kwargs):
-        db_user, db_password, db_host, db_schema = backend.database.queries_v2.get_database_config()
-        conn = psycopg2.connect(database=db_schema,
-                                user=db_user,
-                                password=db_password,
-                                host=db_host)
+        db_config = backend.database.queries_v2.get_database_config()
+        db_config['user'] = db_config.pop('username')
+        conn = psycopg2.connect(**db_config)
         conn.autocommit = True
         cursor = conn.cursor()
         func(cursor=cursor, **kwargs)
@@ -53,9 +51,9 @@ def destroy_testing_db_schema(test_db_name: str, cursor):
 
 
 def create_local_engine(test_db_name: str):
-    db_user, db_password, db_host, _ = backend.database.queries_v2.get_database_config()
-    engine = sqlalchemy.create_engine(f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{test_db_name}',
-                                      poolclass=sqlalchemy.pool.NullPool)
+    db_config = backend.database.queries_v2.get_database_config()
+    db_config['database'] = test_db_name
+    engine = backend.database.queries_v2.create_engine(url=backend.database.queries_v2.create_url(db_config=db_config))
     return engine
 
 

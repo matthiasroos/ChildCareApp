@@ -10,45 +10,47 @@ import sqlalchemy.pool
 import backend.database.models
 
 
-def get_database_config():
+def get_database_config() -> dict[str, str]:
     """
 
     :return:
     """
     dotenv.load_dotenv()
-    db_user = os.environ.get('DB_USER')
-    db_password = os.environ.get('DB_PASSWORD')
-    db_host = os.environ.get('DB_HOST')
-    db_schema = os.environ.get('DB_SCHEMA')
-    return db_user, db_password, db_host, db_schema
+    db_config = dict()
+
+    db_config['username'] = os.environ.get('DB_USER')
+    db_config['password'] = os.environ.get('DB_PASSWORD')
+    db_config['host'] = os.environ.get('DB_HOST')
+    db_config['port'] = os.environ.get('DB_PORT')
+    db_config['database'] = os.environ.get('DB_SCHEMA')
+    return db_config
 
 
-def create_connection_string(db_config: typing.Tuple[str, str, str, str]) -> str:
+def create_url(db_config: dict[str, str]) -> sqlalchemy.engine.url.URL:
     """
 
     :return:
     """
-    db_user, db_password, db_host, db_schema = db_config
-    connection_string = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_schema}'
-    return connection_string
+    db_config['drivername'] = 'postgresql+psycopg2'
+    url = sqlalchemy.engine.url.URL.create(**db_config)
+    return url
 
 
-def create_engine(connection_string: str) -> sqlalchemy.engine.Engine:
+def create_engine(url: sqlalchemy.engine.url.URL) -> sqlalchemy.engine.Engine:
     """
 
     :return:
     """
-    engine = sqlalchemy.create_engine(connection_string,
-                                      poolclass=sqlalchemy.pool.NullPool)
+    engine = sqlalchemy.create_engine(url, poolclass=sqlalchemy.pool.NullPool)
     return engine
 
 
-def create_session(db_config: typing.Tuple[str, str, str, str]) -> sqlalchemy.orm.Session:
+def create_session(db_config: dict[str, str]) -> sqlalchemy.orm.Session:
     """
 
     :return:
     """
-    engine = create_engine(create_connection_string(db_config=db_config))
+    engine = create_engine(create_url(db_config=db_config))
     session = sqlalchemy.orm.Session(autocommit=False, autoflush=False, bind=engine)
 
     return session
