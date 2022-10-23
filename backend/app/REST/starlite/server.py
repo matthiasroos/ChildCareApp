@@ -80,6 +80,18 @@ class ChildrenController(starlite.Controller):
             return backend.app.REST.utils.json_handling.serialize_result(result=result)
         raise starlite.NotFoundException()
 
+    @starlite.post('/create', status_code=starlette.status.HTTP_201_CREATED)
+    async def create_child(self, db: sqlalchemy.orm.Session, data: dict) -> uuid.UUID:
+        """
+
+        :return:
+        """
+        child_id = uuid.uuid4()
+        child_dict = data
+        child_dict['child_id'] = child_id
+        _ = backend.database.queries_v2.create_child(db=db, child=child_dict)
+        return child_id
+
 
 app = starlite.Starlite(route_handlers=[ChildrenController],
                         plugins=[starlite.plugins.sql_alchemy.SQLAlchemyPlugin(

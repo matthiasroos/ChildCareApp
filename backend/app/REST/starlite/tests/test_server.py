@@ -6,7 +6,12 @@ import starlite.testing
 
 import backend.app.REST.starlite.server
 import backend.app.REST.utils.testing
+import backend.database.schemas
 import backend.database.queries_v2
+
+
+class ChildBaseFactory(pydantic_factories.ModelFactory):
+    __model__ = backend.database.schemas.ChildBase
 
 
 class TestingStarliteServer(backend.app.REST.utils.testing.TestingServer):
@@ -32,6 +37,19 @@ class TestingStarliteServer(backend.app.REST.utils.testing.TestingServer):
     def tearDown(self) -> None:
         self.client = None
 
+    def test_create_child(self):
+        db_config = backend.database.queries_v2.get_database_config()
+        db_config['database'] = self.test_db_name
+        self.monkeypatch.setattr('backend.database.queries_v2.get_database_config',
+                                 lambda **kwargs: db_config
+                                 )
+        child = ChildBaseFactory.build().json()
+        response = self.client.post('/rest/starlite/v1/children/create',
+                                    content=child,
+                                    auth=(self.user, self.password))
+        self.monkeypatch.undo()
+        assert response.status_code == 201
+
     def test_fetch_children(self):
         db_config = backend.database.queries_v2.get_database_config()
         db_config['database'] = self.test_db_name
@@ -42,3 +60,4 @@ class TestingStarliteServer(backend.app.REST.utils.testing.TestingServer):
                                    auth=(self.user, self.password))
         self.monkeypatch.undo()
         assert response.status_code == 200
+        assert len(response.json()) == 1
