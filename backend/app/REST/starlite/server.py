@@ -108,7 +108,3 @@ app = starlite.Starlite(route_handlers=[ChildrenController],
                                             starlette.status.HTTP_403_FORBIDDEN: forbidden,
                                             starlette.status.HTTP_404_NOT_FOUND: not_found,
                                             starlette.status.HTTP_500_INTERNAL_SERVER_ERROR: server_error})
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host='localhost', port=8085)

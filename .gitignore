@@ -1,3 +1,4 @@
 .env
 *.pyc
 .idea/*
+backend/app/REST/starlite/gunicorn.conf.py
