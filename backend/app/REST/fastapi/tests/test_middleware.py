@@ -104,3 +104,45 @@ def test_authenticate_error(monkeypatch):
 
     with pytest.raises(starlette.authentication.AuthenticationError):
         _, _ = asyncio.run(basicauthbackend.authenticate(conn=conn))
+
+
+# Testing of unused authenticate middleware
+def test_authenticate_user_all_is_working(monkeypatch):
+    headers = starlette.datastructures.Headers(
+        {'Authorization': 'Basic dGVzdF91c2VyOkRnaWRYcXB0OVJJNGM3WDN0MkYz'})
+    scope = {
+        'method': 'GET',
+        'type': 'http',
+    }
+    request = fastapi.requests.Request(scope)
+    request._headers = headers
+
+    monkeypatch.setattr('backend.database.usermanagement.authenticate_user', lambda **kwargs: (True, 'admin'))
+
+    async def func(*args):
+        return 1
+
+    response = asyncio.run(backend.app.REST.fastapi.middleware.authenticate_user(request=request,
+                                                                                 call_next=func))
+    assert response == 1
+
+
+def test_authenticate_user_error(monkeypatch):
+
+    headers = starlette.datastructures.Headers(
+        {'Authorization': 'Basic dGVzdF91c2VyOkRnaWRYcXB0OVJJNGM3WDN0MkYz'})
+    scope = {
+        'method': 'GET',
+        'type': 'http',
+    }
+    request = fastapi.requests.Request(scope)
+    request._headers = headers
+
+    monkeypatch.setattr('backend.database.usermanagement.authenticate_user', lambda **kwargs: (False, None))
+
+    async def func(*args):
+        return 1
+
+    with pytest.raises(fastapi.HTTPException):
+        _ = asyncio.run(backend.app.REST.fastapi.middleware.authenticate_user(request=request,
+                                                                              call_next=func))
