@@ -100,6 +100,24 @@ def edit_user(db: sqlalchemy.orm.Session, user_name: str, new_values: typing.Dic
     return
 
 
+def write_logging(db: sqlalchemy.orm.Session, log_entry: dict, insert: bool):
+    """
+
+    :param db:
+    :param log_entry:
+    :param insert:
+    :return:
+    """
+    if insert:
+        db.execute(sqlalchemy.insert(backend.database.models.Log).values(**log_entry))
+    else:
+        db.execute(sqlalchemy.update(backend.database.models.Log).
+                   where(backend.database.models.Log.request_id == log_entry['request_id']).
+                   values(**log_entry))
+    db.commit()
+    return
+
+
 def fetch_children(db: sqlalchemy.orm.Session, recent: bool = False, skip: int = 0, limit: int = 10):
     """
     Fetch all children.

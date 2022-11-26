@@ -20,6 +20,24 @@ class User(Base):
     role = sqlalchemy.Column(sqlalchemy.String(15))
 
 
+class Log(Base):
+    """
+    Table children_api_logging
+    """
+    __tablename__ = 'children_api_logging'
+
+    request_id = sqlalchemy.Column(
+        sqlalchemy.dialects.postgresql.UUID(as_uuid=True), primary_key=True, index=True, unique=True)
+    user_name = sqlalchemy.Column(sqlalchemy.String(15))
+    endpoint = sqlalchemy.Column(sqlalchemy.String(120))
+    method = sqlalchemy.Column(sqlalchemy.String(6))
+    body = sqlalchemy.Column(sqlalchemy.String(1000))
+    query = sqlalchemy.Column(sqlalchemy.String(200))
+    request_timestamp = sqlalchemy.Column(sqlalchemy.DateTime())
+    status_code = sqlalchemy.Column(sqlalchemy.Integer())
+    response_timestamp = sqlalchemy.Column(sqlalchemy.DateTime())
+
+
 class Child(Base):
     """
     Table Children
