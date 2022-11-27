@@ -2,6 +2,7 @@ import json
 
 import flask
 
+import backend.app.REST.utils.gunicorn_app
 import backend.app.REST.utils.json_handling
 import backend.database.queries
 import backend.database.schemas
@@ -40,4 +41,8 @@ def post():
 
 
 if __name__ == '__main__':
-    app.run(debug=False, host='localhost', port=8084)
+    options = {
+        'bind': '%s:%s' % ('localhost', '8084'),
+        'workers': 2,
+    }
+    backend.app.REST.utils.gunicorn_app.GunicornApp(app, options).run()
