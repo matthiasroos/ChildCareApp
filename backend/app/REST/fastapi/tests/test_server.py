@@ -1,78 +1,56 @@
 import asyncio
-import unittest.mock
 
 import fastapi.requests
 import fastapi.testclient
-import pydantic
-import pytest
-import starlette.datastructures
+import pydantic_factories
+import sqlalchemy
+import sqlalchemy.orm
+import sqlalchemy.pool
 
 import backend.app.REST.fastapi.server
+import backend.app.REST.utils.testing
+import backend.database.models
+import backend.database.queries_v2
+import backend.database.usermanagement
 
 
-def test_authenticate_all_is_working():
-    headers = starlette.datastructures.Headers(
-        {'Authorization': 'Basic dGVzdF91c2VyOkRnaWRYcXB0OVJJNGM3WDN0MkYz'})
-    scope = {
-        'method': 'GET',
-        'type': 'http',
-        'headers': None}
-    conn = fastapi.requests.HTTPConnection(scope=scope)
-    conn._headers = headers
-
-    basicauthbackend = backend.app.REST.fastapi.server.BasicAuthBackend()
-
-    credentials, user = asyncio.run(basicauthbackend.authenticate(conn=conn))
-
-    assert credentials
-    assert user
+class ChildBaseFactory(pydantic_factories.ModelFactory):
+    __model__ = backend.database.schemas.ChildBase
 
 
-@pytest.fixture
-def testclient():
-    app = fastapi.FastAPI()
-    app.add_middleware(backend.app.REST.fastapi.server.CloneRequestMiddleware,
-                       servers=['test_url:9000'])
-
-    class InputModel(pydantic.BaseModel):
-        int_param: int
-        str_param: str
-
-    @app.get('/test/{path_param_1}')
-    def get_call(path_param_1: str, body_input: InputModel, skip: int = 0, limit: int = 10):
-        pass
-
-    client = fastapi.testclient.TestClient(app)
-    return client
+def override_get_db(test_db_name: str):
+    def wrapper():
+        engine = backend.app.REST.utils.testing.create_local_engine(test_db_name=test_db_name)
+        session = sqlalchemy.orm.Session(autocommit=False, autoflush=False, bind=engine)
+        try:
+            yield session
+        finally:
+            session.close()
+            engine.dispose()
+    return wrapper
 
 
-def test_get_call(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
+class TestingServer(backend.app.REST.utils.testing.TestingServer):
 
-        testclient.get('/test/abc',
-                       params={'skip': 0, 'limit': 10})
+    def setUp(self):
+        super().setUp()
 
-    assert mock_requests.call_args.kwargs['url'] == 'http://test_url:9000/test/abc'
-    assert mock_requests.call_args.kwargs['params'] == b'skip=0&limit=10'
+        app = backend.app.REST.fastapi.server.app
+        app.dependency_overrides[backend.app.REST.fastapi.server.get_db] = override_get_db(
+            test_db_name=self.test_db_name)
 
+        self.client = fastapi.testclient.TestClient(app)
 
-def test_post_call_dict_as_json(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
+    def tearDown(self) -> None:
+        self.client = None
 
-        testclient.post('/test/abc',
-                        params={'skip': 0, 'limit': 10},
-                        json={'int_param': 7, 'str_param': 'teststr'})
-
-    assert mock_requests.call_args.kwargs['params'] == b'skip=0&limit=10'
-    assert mock_requests.call_args.kwargs['data'] == b'{"int_param": 7, "str_param": "teststr"}'
-
-
-def test_post_call_bytes_as_data(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
-
-        testclient.post('/test/abc',
-                        params={'skip': 0, 'limit': 10},
-                        data=b'{"int_param": 7, "str_param": "teststr"}')
-
-    assert mock_requests.call_args.kwargs['params'] == b'skip=0&limit=10'
-    assert mock_requests.call_args.kwargs['data'] == b'{"int_param": 7, "str_param": "teststr"}'
+    def test_fetch_children(self):
+        db_config = backend.database.queries_v2.get_database_config()
+        db_config['database'] = self.test_db_name
+        self.monkeypatch.setattr('backend.database.queries_v2.get_database_config',
+                                 lambda **kwargs: db_config
+                                 )
+        response = self.client.get('/children',
+                                   auth=(self.user, self.password))
+        self.monkeypatch.undo()
+        assert response.status_code == 200
