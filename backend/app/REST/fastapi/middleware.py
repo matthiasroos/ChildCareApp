@@ -1,9 +1,9 @@
+import asyncio
 import base64
-import threading
 import typing
 
 import fastapi
-import requests
+import httpx
 import starlette.authentication
 import starlette.types
 
@@ -41,10 +41,9 @@ class CloneRequestMiddleware:
             kw_args.update({'data': body})
 
         for server in self.servers:
-            kw_args.update({'url': f'http://{server}{scope["path"]}'})
-            thread = threading.Thread(target=requests.request, kwargs=kw_args)
-
-            thread.start()
+            kw_args.update({'url': f'{server}{scope["path"]}'})
+            client = httpx.AsyncClient()
+            asyncio.ensure_future(client.request(**kw_args))
 
         # Dispatch to the ASGI callable
         async def wrapped_receive():
