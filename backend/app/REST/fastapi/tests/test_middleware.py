@@ -17,7 +17,7 @@ import backend.app.REST.fastapi.middleware
 def testclient():
     app = fastapi.FastAPI()
     app.add_middleware(backend.app.REST.fastapi.middleware.CloneRequestMiddleware,
-                       servers=['test_url:9000'])
+                       servers=['http://test_url:9000'])
 
     class InputModel(pydantic.BaseModel):
         int_param: int
@@ -36,7 +36,7 @@ def testclient():
 
 
 def test_get_call(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
+    with unittest.mock.patch('httpx.AsyncClient.request') as mock_requests:
 
         testclient.get('/test/abc',
                        params={'skip': 0, 'limit': 10})
@@ -46,7 +46,7 @@ def test_get_call(testclient):
 
 
 def test_post_call_dict_as_json(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
+    with unittest.mock.patch('httpx.AsyncClient.request') as mock_requests:
 
         testclient.post('/test/abc',
                         params={'skip': 0, 'limit': 10},
@@ -57,7 +57,7 @@ def test_post_call_dict_as_json(testclient):
 
 
 def test_post_call_bytes_as_data(testclient):
-    with unittest.mock.patch('requests.request') as mock_requests:
+    with unittest.mock.patch('httpx.AsyncClient.request') as mock_requests:
 
         testclient.post('/test/abc',
                         params={'skip': 0, 'limit': 10},
