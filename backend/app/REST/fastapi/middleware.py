@@ -1,6 +1,8 @@
 import asyncio
 import base64
+import datetime
 import typing
+import uuid
 
 import fastapi
 import httpx
@@ -124,3 +126,71 @@ async def authenticate_user(request: fastapi.Request, call_next: typing.Callable
     request.scope['auth'] = starlette.authentication.AuthCredentials([role])
     response = await call_next(request)
     return response
+
+
+class DBLoggingMiddleware:
+    """
+
+    """
+    def __init__(self, app: starlette.types.ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: starlette.types.Scope,
+                       receive: starlette.types.Receive,
+                       send: starlette.types.Send) -> None:
+        if scope['type'] == 'http':
+            db_config = backend.database.queries_v2.get_database_config()
+            db = backend.database.queries_v2.create_session(db_config=db_config)
+            body = None
+            if scope['method'] in ('POST', 'PUT',):
+                messages = []
+                more_body = True
+                while more_body:
+                    message_ = await receive()
+                    messages.append(message_)
+                    more_body = message_.get('more_body', False)
+
+                body = b''.join([message.get('body', b'') for message in messages])
+            request_id = uuid.uuid4()
+            log_entry = {
+                'request_id': request_id,
+                'user_name': scope['user'].display_name.decode('utf-8'),
+                'endpoint': f'{scope["root_path"]}{scope["path"]}',
+                'method': scope['method'],
+                'request_timestamp': datetime.datetime.now(),
+                'body': body.decode('utf-8') if body else None,
+                'query': scope['query_string'].decode('utf-8')
+            }
+            backend.database.queries_v2.write_logging(db=db,
+                                                      log_entry=log_entry,
+                                                      insert=True)
+
+            async def wrapped_receive():
+                if messages:
+                    return messages.pop(0)
+                return await receive()
+
+            async def send_wrapper(message: starlette.types.Message) -> None:
+                if not scope.get('state', None):
+                    scope['state'] = {}
+                if message['type'] == 'http.response.start':
+                    scope['state']['http.response.start'] = message
+                elif message['type'] == 'http.response.body':
+                    if scope['state'].get('http.response.body'):
+                        scope['state']['http.response.body'].append(message)
+                    else:
+                        scope['state']['http.response.body'] = [message]
+                    if not message.get('more_body', None):
+                        log_entry = {
+                            'request_id': request_id,
+                            'status_code': scope['state']['http.response.start']['status'],
+                            'response_timestamp': datetime.datetime.now()}
+                        backend.database.queries_v2.write_logging(db=db,
+                                                                  log_entry=log_entry,
+                                                                  insert=False)
+                        db.close()
+                await send(message)
+
+            await self.app(scope, wrapped_receive, send_wrapper)
+        else:
+            await self.app(scope, receive, send)

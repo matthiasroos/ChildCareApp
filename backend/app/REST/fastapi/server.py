@@ -57,6 +57,8 @@ app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depend
 app.add_middleware(backend.app.REST.fastapi.middleware.CloneRequestMiddleware,
                    servers=['http://localhost:8000/rest/flask/v2', ])
 
+app.add_middleware(backend.app.REST.fastapi.middleware.DBLoggingMiddleware)
+
 app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
                    backend=backend.app.REST.fastapi.middleware.BasicAuthBackend(),
                    on_error=backend.app.REST.fastapi.middleware.on_auth_error)
