@@ -6,7 +6,7 @@ import starlette.status
 import starlite
 import starlite.enums
 import starlite.plugins.sql_alchemy
-import uvicorn
+import uvicorn.workers
 
 import backend.app.REST.starlite.guards
 import backend.app.REST.starlite.middleware
@@ -102,9 +102,14 @@ app = starlite.Starlite(route_handlers=[ChildrenController],
                                 use_async_engine=False,
                                 dependency_key='db')
                         )],
-                        middleware=[backend.app.REST.starlite.middleware.BasicAuthMiddleware],
+                        middleware=[backend.app.REST.starlite.middleware.BasicAuthMiddleware,
+                                    backend.app.REST.starlite.middleware.DBLoggingMiddleware],
                         guards=[backend.app.REST.starlite.guards.admin_user_guard('admin')],
                         exception_handlers={starlette.status.HTTP_401_UNAUTHORIZED: not_authorized,
                                             starlette.status.HTTP_403_FORBIDDEN: forbidden,
                                             starlette.status.HTTP_404_NOT_FOUND: not_found,
                                             starlette.status.HTTP_500_INTERNAL_SERVER_ERROR: server_error})
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host='localhost', port=8085)
