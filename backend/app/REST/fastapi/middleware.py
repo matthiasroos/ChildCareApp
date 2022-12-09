@@ -12,6 +12,25 @@ import starlette.types
 import backend.database.queries_v2
 
 
+async def snatch_body(receive: starlette.types.Receive):
+    """
+    Snatch the body of the request.
+
+    :param receive:
+    :return:
+    """
+    messages = []
+    more_body = True
+    while more_body:
+        message = await receive()
+        messages.append(message)
+        more_body = message.get('more_body', False)
+
+    body = b''.join([message.get('body', b'') for message in messages])
+
+    return body, messages
+
+
 class CloneRequestMiddleware:
     """
     Middleware for cloning the request (sending them to another server)
@@ -32,14 +51,7 @@ class CloneRequestMiddleware:
                    'params': scope['query_string'],
                    'headers': dict(scope['headers'])}
         if scope['method'] in ('POST', 'PUT', ):
-            messages = []
-            more_body = True
-            while more_body:
-                message = await receive()
-                messages.append(message)
-                more_body = message.get('more_body', False)
-
-            body = b''.join([message.get('body', b'') for message in messages])
+            body, messages = await snatch_body(receive=receive)
             kw_args.update({'data': body})
 
         for server in self.servers:
@@ -143,14 +155,7 @@ class DBLoggingMiddleware:
             db = backend.database.queries_v2.create_session(db_config=db_config)
             body = None
             if scope['method'] in ('POST', 'PUT',):
-                messages = []
-                more_body = True
-                while more_body:
-                    message_ = await receive()
-                    messages.append(message_)
-                    more_body = message_.get('more_body', False)
-
-                body = b''.join([message.get('body', b'') for message in messages])
+                body, messages = await snatch_body(receive=receive)
             request_id = uuid.uuid4()
             log_entry = {
                 'request_id': request_id,
