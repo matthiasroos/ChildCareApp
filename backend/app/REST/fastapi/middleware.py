@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import datetime
+import json
 import typing
 import uuid
 
@@ -197,5 +198,42 @@ class DBLoggingMiddleware:
                 await send(message)
 
             await self.app(scope, wrapped_receive, send_wrapper)
+        else:
+            await self.app(scope, receive, send)
+
+
+class TruncateMiddleware:
+    """
+    Middleware for truncating a long param to a limit
+    """
+    def __init__(self, app: starlette.types.ASGIApp,
+                 long_param: str,
+                 limit: int) -> None:
+        self.app = app
+        self.long_param = long_param
+        self.limit = limit
+
+    async def __call__(self, scope: starlette.types.Scope,
+                       receive: starlette.types.Receive,
+                       send: starlette.types.Send) -> None:
+        if scope['type'] == 'http':
+            if scope['method'] in ('POST', 'PUT',):
+                body, messages = await snatch_body(receive=receive)
+                trunc_messages = []
+                for m in messages:
+                    bd = eval(m['body'])
+                    if long_param := bd.get(self.long_param):
+                        bd[self.long_param] = long_param[:self.limit]
+                        m.update({'body': json.dumps(bd).encode('utf-8')})
+                    trunc_messages.append(m)
+
+            async def wrapped_receive():
+                if trunc_messages:
+                    return trunc_messages.pop(0)
+                elif messages:
+                    return messages.pop(0)
+                return await receive()
+
+            await self.app(scope, wrapped_receive, send)
         else:
             await self.app(scope, receive, send)
