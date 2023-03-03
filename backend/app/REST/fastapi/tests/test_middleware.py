@@ -146,3 +146,30 @@ def test_authenticate_user_error(monkeypatch):
     with pytest.raises(fastapi.HTTPException):
         _ = asyncio.run(backend.app.REST.fastapi.middleware.authenticate_user(request=request,
                                                                               call_next=func))
+
+
+# Testing of TruncateMiddleware
+@pytest.fixture
+def truncate_testclient():
+    app = fastapi.FastAPI()
+    app.add_middleware(backend.app.REST.fastapi.middleware.TruncateMiddleware,
+                       long_param='long_txt',
+                       limit=10)
+
+    class InputModel(pydantic.BaseModel):
+        long_txt: str
+
+    @app.post('/test')
+    def post_call(body_input: InputModel, ):
+        return fastapi.Response(body_input.long_txt)
+
+    client = fastapi.testclient.TestClient(app)
+    return client
+
+
+def test_truncate_post_call(truncate_testclient):
+
+    resp = truncate_testclient.post('/test',
+                                    json={'long_txt': 'AaBbCcDdEeFf'})
+
+    assert resp.text == 'AaBbCcDdEe'
