@@ -230,8 +230,6 @@ class TruncateMiddleware:
             async def wrapped_receive():
                 if trunc_messages:
                     return trunc_messages.pop(0)
-                elif messages:
-                    return messages.pop(0)
                 return await receive()
 
             await self.app(scope, wrapped_receive, send)
