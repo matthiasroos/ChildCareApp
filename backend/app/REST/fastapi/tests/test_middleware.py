@@ -1,4 +1,5 @@
 import asyncio
+import typing
 import unittest.mock
 
 import fastapi
@@ -156,8 +157,12 @@ def truncate_testclient():
                        long_param='long_txt',
                        limit=10)
 
+    @app.get('/test')
+    def get_call():
+        pass
+
     class InputModel(pydantic.BaseModel):
-        long_txt: str
+        long_txt: typing.Optional[str]
 
     @app.post('/test')
     def post_call(body_input: InputModel, ):
@@ -167,9 +172,24 @@ def truncate_testclient():
     return client
 
 
-def test_truncate_post_call(truncate_testclient):
+def test_truncate_get_call(truncate_testclient):
+
+    resp = truncate_testclient.get('/test')
+
+    assert resp.status_code == 200
+
+
+def test_truncate_post_call0(truncate_testclient):
 
     resp = truncate_testclient.post('/test',
                                     json={'long_txt': 'AaBbCcDdEeFf'})
 
     assert resp.text == 'AaBbCcDdEe'
+
+
+def test_truncate_post_call1(truncate_testclient):
+
+    resp = truncate_testclient.post('/test',
+                                    json={'other_txt': 'AaBbCcDdEeFf'})
+
+    assert resp.status_code == 200
