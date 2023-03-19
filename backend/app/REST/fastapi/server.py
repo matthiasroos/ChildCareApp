@@ -50,6 +50,8 @@ exception_handlers = {
     500: server_error,
 }
 
+Session = typing.Annotated[sqlalchemy.orm.Session, fastapi.Depends(get_db)]
+
 app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depends(get_db)],
                       exception_handlers=exception_handlers)
 
@@ -69,8 +71,10 @@ app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
 
 @app.get('/children', response_model=typing.List[backend.database.schemas.Child])
 @starlette.authentication.requires(['admin'])
-async def fetch_children(request: fastapi.Request, recent: bool = False, skip: int = 0, limit: int = 10,
-                         db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+async def fetch_children(request: fastapi.Request,
+                         db: Session,
+                         recent: bool = False, skip: int = 0, limit: int = 10,
+                         ):
     """
 
     :return:
@@ -81,8 +85,10 @@ async def fetch_children(request: fastapi.Request, recent: bool = False, skip: i
 
 @app.get('/children/{child_id}', response_model=backend.database.schemas.Child)
 @starlette.authentication.requires(['admin'])
-async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
-                      db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+async def fetch_child(request: fastapi.Request,
+                      db: Session,
+                      child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
+                      ):
     """
 
     :return:
@@ -95,7 +101,9 @@ async def fetch_child(request: fastapi.Request, child_id: uuid.UUID = fastapi.Pa
 
 @app.post('/children', response_model=backend.database.schemas.Child)
 @starlette.authentication.requires(['admin'])
-async def fetch_one_child(request: fastapi.Request, body: dict, db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+async def fetch_one_child(request: fastapi.Request, db: Session,
+                          body: dict
+                          ):
     """
 
     :return:
@@ -108,8 +116,10 @@ async def fetch_one_child(request: fastapi.Request, body: dict, db: sqlalchemy.o
 
 @app.post('/children/create', status_code=fastapi.status.HTTP_201_CREATED)
 @starlette.authentication.requires(['admin'])
-async def create_child(request: fastapi.Request, child: backend.database.schemas.ChildBase,
-                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+async def create_child(request: fastapi.Request,
+                       db: Session,
+                       child: backend.database.schemas.ChildBase,
+                       ):
     """
 
     :return:
@@ -123,9 +133,11 @@ async def create_child(request: fastapi.Request, child: backend.database.schemas
 
 @app.put('/children/{child_id}/update')
 @starlette.authentication.requires(['admin'])
-async def update_child(request: fastapi.Request, child_id: uuid.UUID,
+async def update_child(request: fastapi.Request,
+                       child_id: uuid.UUID,
                        updates_for_child: backend.database.schemas.ChildUpdate,
-                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+                       db: Session,
+                       ):
     """
 
     :return:
@@ -142,7 +154,8 @@ async def update_child(request: fastapi.Request, child_id: uuid.UUID,
 @starlette.authentication.requires(['admin'])
 async def delete_child(request: fastapi.Request,
                        child_id: uuid.UUID,
-                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+                       db: Session,
+                       ):
     """
 
     :return:
@@ -157,10 +170,10 @@ async def delete_child(request: fastapi.Request,
 @app.get('/children/{child_id}/caretimes', response_model=typing.List[backend.database.schemas.Caretime])
 @starlette.authentication.requires(['admin'])
 async def fetch_caretimes(request: fastapi.Request,
+                          db: Session,
                           child_id: uuid.UUID,
                           skip: int = 0,
                           limit: int = 10,
-                          db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
                           ):
     """
 
@@ -175,7 +188,7 @@ async def fetch_caretimes(request: fastapi.Request,
 async def fetch_single_caretime(request: fastapi.Request,
                                 child_id: uuid.UUID,
                                 caretime_id: uuid.UUID,
-                                db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+                                db: Session,
                                 ):
     """
 
@@ -192,7 +205,7 @@ async def fetch_single_caretime(request: fastapi.Request,
 async def add_caretime(request: fastapi.Request,
                        child_id: uuid.UUID,
                        time_interval: backend.database.schemas.CaretimeBase,
-                       db: sqlalchemy.orm.Session = fastapi.Depends(get_db),
+                       db: Session,
                        ):
     """
 
@@ -220,7 +233,8 @@ async def edit_caretime(request: fastapi.Request,
                         child_id: uuid.UUID,
                         caretime_id: uuid.UUID,
                         time_interval: backend.database.schemas.CaretimeBase,
-                        db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+                        db: Session,
+                        ):
     """
 
     :return:
@@ -246,7 +260,8 @@ async def edit_caretime(request: fastapi.Request,
 async def delete_caretime(request: fastapi.Request,
                           child_id: uuid.UUID,
                           caretime_id: uuid.UUID,
-                          db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+                          db: Session,
+                          ):
     """
 
     :return:
@@ -262,8 +277,9 @@ async def delete_caretime(request: fastapi.Request,
 @app.get('/parents')
 @starlette.authentication.requires(['admin'])
 async def fetch_parents(request: fastapi.Request,
+                        db: Session,
                         limit: int = 10,
-                        db: sqlalchemy.orm.Session = fastapi.Depends(get_db)):
+                        ):
     """
 
     :return:
