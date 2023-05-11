@@ -19,4 +19,5 @@ dependencies:
   - pip
   - pip:
       - flask_restful>=0.3.9
+      - strawberry-graphql[fastapi]
 prefix: /opt/miniconda3/envs/childcareapp
