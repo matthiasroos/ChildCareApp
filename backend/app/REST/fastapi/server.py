@@ -52,7 +52,7 @@ exception_handlers = {
 
 Session = typing.Annotated[sqlalchemy.orm.Session, fastapi.Depends(get_db)]
 
-app = fastapi.FastAPI(root_path='/rest/fastapi/v1', dependencies=[fastapi.Depends(get_db)],
+app = fastapi.FastAPI(root_path='/rest/fastapi/v1',
                       exception_handlers=exception_handlers)
 
 
