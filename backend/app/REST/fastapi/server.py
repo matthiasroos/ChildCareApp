@@ -3,6 +3,8 @@ import typing
 import uuid
 
 import fastapi
+import fastapi.encoders
+import fastapi.exceptions
 import fastapi.requests
 import fastapi.responses
 import fastapi.security
@@ -33,21 +35,35 @@ def get_db():
 
 
 async def forbidden(request: fastapi.Request, exc: fastapi.HTTPException):
-    return fastapi.responses.JSONResponse(status_code=403, content={'error': 'Permission denied'})
+    return fastapi.responses.JSONResponse(
+        status_code=fastapi.status.HTTP_403_FORBIDDEN,
+        content={'error': 'Permission denied'})
 
 
 async def not_found(request: fastapi.Request, exc: fastapi.HTTPException):
-    return fastapi.responses.JSONResponse(status_code=404, content={'error': 'Item not found'})
+    return fastapi.responses.JSONResponse(
+        status_code=fastapi.status.HTTP_404_NOT_FOUND,
+        content={'error': 'Item not found'})
 
 
 async def server_error(request: fastapi.Request, exc: fastapi.HTTPException):
-    return fastapi.responses.JSONResponse(status_code=500, content={'error': 'Server error'})
+    return fastapi.responses.JSONResponse(
+        status_code=fastapi.status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={'error': 'Server error'})
+
+
+async def request_validation_error(request: fastapi.Request, exc: fastapi.exceptions.RequestValidationError):
+    return fastapi.responses.JSONResponse(
+        status_code=fastapi.status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=fastapi.encoders.jsonable_encoder({'detail': exc.errors(), 'body': exc.body}),
+    )
 
 
 exception_handlers = {
     403: forbidden,
     404: not_found,
     500: server_error,
+    fastapi.exceptions.RequestValidationError: request_validation_error,
 }
 
 Session = typing.Annotated[sqlalchemy.orm.Session, fastapi.Depends(get_db)]
