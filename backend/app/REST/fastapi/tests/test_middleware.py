@@ -1,14 +1,18 @@
 import asyncio
+import datetime
 import typing
 import unittest.mock
+import uuid
 
 import fastapi
 import fastapi.testclient
+import freezegun
 import pytest
 import pydantic
 import starlette
 import starlette.authentication
 import starlette.datastructures
+import time_machine
 
 import backend.app.REST.fastapi.middleware
 
@@ -147,6 +151,74 @@ def test_authenticate_user_error(monkeypatch):
     with pytest.raises(fastapi.HTTPException):
         _ = asyncio.run(backend.app.REST.fastapi.middleware.authenticate_user(request=request,
                                                                               call_next=func))
+
+
+# Testing of DBLoggingMiddleware
+@pytest.fixture
+def logging_testclient():
+    app = fastapi.FastAPI()
+    app.add_middleware(backend.app.REST.fastapi.middleware.DBLoggingMiddleware)
+
+    @app.post('/test')
+    def post_call():
+        pass
+
+    client = fastapi.testclient.TestClient(app)
+    return client
+
+
+@freezegun.freeze_time('2023-07-24 18:00')
+def test_logging_post_call_freezegun(logging_testclient):
+    with unittest.mock.patch('backend.database.queries_v2') as mock_queries, \
+         unittest.mock.patch.object(uuid, 'uuid4', side_effect=[uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3')]):
+
+        mock_queries.get_database_config.return_value = {}
+        db_mock = unittest.mock.MagicMock()
+        mock_queries.create_session.return_value = db_mock
+
+        logging_testclient.post('/test', json={'txt_key': 'txt_value'})
+
+    assert mock_queries.write_logging.call_args_list[0].kwargs == {
+        'db': db_mock,
+        'insert': True,
+        'log_entry': {'body': '{"txt_key": "txt_value"}', 'endpoint': '/test', 'method': 'POST', 'query': '',
+                      'request_id': uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3'),
+                      'request_timestamp': datetime.datetime(2023, 7, 24, 18)}
+    }
+    assert mock_queries.write_logging.call_args_list[1].kwargs == {
+        'db': db_mock,
+        'insert': False,
+        'log_entry': {'request_id': uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3'),
+                      'status_code': 200,
+                      'response_timestamp': datetime.datetime(2023, 7, 24, 18)}
+    }
+
+
+@time_machine.travel('2023-07-24 18:00', tick=False)
+def test_logging_post_call_time_machine(logging_testclient):
+    with unittest.mock.patch('backend.database.queries_v2') as mock_queries, \
+         unittest.mock.patch.object(uuid, 'uuid4', side_effect=[uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3')]):
+        mock_queries.get_database_config.return_value = {}
+        db_mock = unittest.mock.MagicMock()
+        mock_queries.create_session.return_value = db_mock
+
+        logging_testclient.post('/test', json={'txt_key': 'txt_value'})
+
+    assert mock_queries.write_logging.call_args_list[0].kwargs == {
+        'db': db_mock,
+        'insert': True,
+        'log_entry': {'body': '{"txt_key": "txt_value"}', 'endpoint': '/test', 'method': 'POST', 'query': '',
+                      'request_id': uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3'),
+                      'request_timestamp': datetime.datetime(2023, 7, 24, 18)}
+
+    }
+    assert mock_queries.write_logging.call_args_list[1].kwargs == {
+        'db': db_mock,
+        'insert': False,
+        'log_entry': {'request_id': uuid.UUID('7d90a67b-282b-431f-b090-8f3f0cf78eb3'),
+                      'status_code': 200,
+                      'response_timestamp': datetime.datetime(2023, 7, 24, 18)}
+    }
 
 
 # Testing of TruncateMiddleware
