@@ -18,16 +18,15 @@ class ChildBase(pydantic.BaseModel):
     birth_day: datetime.date
 
 
-class Child(ChildBase):
+class ChildIdentification(pydantic.BaseModel):
     child_id: uuid.UUID
+
+
+class Child(ChildIdentification, ChildBase):
     created_at: datetime.datetime
 
     class Config:
         orm_mode = True
-
-
-class ChildIdentification(pydantic.BaseModel):
-    child_id: uuid.UUID
 
 
 class ChildUpdate(pydantic.BaseModel):
