@@ -26,6 +26,10 @@ class Child(ChildBase):
         orm_mode = True
 
 
+class ChildIdentification(pydantic.BaseModel):
+    child_id: uuid.UUID
+
+
 class ChildUpdate(pydantic.BaseModel):
     name: typing.Optional[str] = pydantic.Field(None)
     sur_name: typing.Optional[str] = pydantic.Field(None)
