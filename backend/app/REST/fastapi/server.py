@@ -85,12 +85,16 @@ app.add_middleware(starlette.middleware.authentication.AuthenticationMiddleware,
 # app.middleware('http')(backend.app.REST.fastapi.middleware.authenticate_user)
 
 
-@app.get('/children', response_model=typing.List[backend.database.schemas.Child])
+@app.get('/children',
+         response_model=list[backend.database.schemas.Child],
+         responses={
+             200: {'description': 'List of children'}
+         })
 @starlette.authentication.requires(['admin'])
 async def fetch_children(request: fastapi.Request,
                          db: Session,
                          recent: bool = False, skip: int = 0, limit: int = 10,
-                         ):
+                         ) -> list[backend.database.schemas.Child]:
     """
 
     :return:
@@ -99,12 +103,22 @@ async def fetch_children(request: fastapi.Request,
     return result
 
 
-@app.get('/children/{child_id}', response_model=backend.database.schemas.Child)
+@app.get('/children/{child_id}',
+         response_model=backend.database.schemas.Child,
+         responses={
+             404: {'description': 'Child not found',
+                   'content': {
+                       'application/json': {
+                           'example': {'error': 'Item not found'}
+                       }},
+                   },
+             200: {'description': 'Child identified by ID'}
+         })
 @starlette.authentication.requires(['admin'])
 async def fetch_child(request: fastapi.Request,
                       db: Session,
                       child_id: uuid.UUID = fastapi.Path(..., title='ID of the child to get'),
-                      ):
+                      ) -> typing.Any:
     """
 
     :return:
@@ -115,11 +129,21 @@ async def fetch_child(request: fastapi.Request,
     raise fastapi.HTTPException(status_code=404)
 
 
-@app.post('/children', response_model=backend.database.schemas.Child)
+@app.post('/children',
+          response_model=backend.database.schemas.Child,
+          responses={
+              404: {'description': 'Child not found',
+                    'content': {
+                        'application/json': {
+                            'example': {'error': 'Item not found'}
+                        }},
+                    },
+              200: {'description': 'Child identified by ID'}
+          })
 @starlette.authentication.requires(['admin'])
 async def fetch_one_child(request: fastapi.Request, db: Session,
                           body: dict
-                          ):
+                          ) -> backend.database.schemas.Child:
     """
 
     :return:
@@ -130,12 +154,17 @@ async def fetch_one_child(request: fastapi.Request, db: Session,
     raise fastapi.HTTPException(status_code=404)
 
 
-@app.post('/children/create', status_code=fastapi.status.HTTP_201_CREATED)
+@app.post('/children/create',
+          status_code=fastapi.status.HTTP_201_CREATED,
+          response_model=backend.database.schemas.ChildIdentification,
+          responses={
+              201: {'description': 'Child created with ID'},
+          })
 @starlette.authentication.requires(['admin'])
 async def create_child(request: fastapi.Request,
                        db: Session,
                        child: backend.database.schemas.ChildBase,
-                       ):
+                       ) -> dict[str, uuid.UUID]:
     """
 
     :return:
@@ -144,7 +173,7 @@ async def create_child(request: fastapi.Request,
     child_dict = child.dict()
     child_dict['child_id'] = child_id
     _ = backend.database.queries_v2.create_child(db=db, child=child_dict)
-    return child_id
+    return {'child_id': child_id}
 
 
 @app.put('/children/{child_id}/update')
